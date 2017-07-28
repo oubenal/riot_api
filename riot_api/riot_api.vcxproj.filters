@@ -24,15 +24,21 @@
     <ClCompile Include="src\Riot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\RiotParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\riot_api\URLReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\riot_api\Summoner.h">
+    <ClInclude Include="include\riot_api\Riot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\riot_api\Riot.h">
+    <ClInclude Include="include\riot_api\RiotObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\riot_api\RiotParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
