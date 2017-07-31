@@ -8,7 +8,7 @@ namespace Riot
 {
 	
 
-	std::string api_key = "RGAPI-d5872ef5-2b67-4557-bb32-0259f0e07762";
+	std::string api_key = "RGAPI-8a71d22e-a280-41ba-bab7-3c94a0bc6598";
 	std::string base_url = "https://euw1.api.riotgames.com/lol/";
 
 	// ---------- API Resource: SUMMONER-V3 ---------- //

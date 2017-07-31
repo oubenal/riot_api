@@ -261,6 +261,4 @@ __pycache__/
 *.pyc
 
 # External ressources
-lib/*
-/riot_api/lib/old-mysql-connector
 /riot_api/lib/old-mysql-connector
