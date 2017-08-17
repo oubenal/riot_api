@@ -1,3 +1,4 @@
+#pragma once
 #ifndef RIOT_PARSER_HPP
 #define RIOT_PARSER_HPP
 #include <rapidjson/document.h>
@@ -10,7 +11,8 @@ namespace Riot
 
 	std::list<LeaguePosition> parseLeaguePositions(const rapidjson::Value& json);
 	Summoner parseSummonerSummoners(const rapidjson::Value& json);
-
+	Matchlist parseMatchlist(const rapidjson::Value& json);
+	Match parseMatch(const rapidjson::Value& json);
 	namespace Helper
 	{
 		// ----------The less glorious wall of helper functions---------- //

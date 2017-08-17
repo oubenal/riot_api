@@ -1,9 +1,7 @@
+#pragma once
 #ifndef RIOT_HPP
 #define RIOT_HPP
-#include <string>
 #include "RiotObject.h"
-#include <rapidjson/document.h>
-#include <map>
 #include <vector>
 #include <list>
 
@@ -20,10 +18,14 @@ namespace Riot
 	Summoner getSummonerSummonersByName(const std::string &name);
 
 	// ---------- API Resource: LEAGUE-V3 ---------- //
-	std::list<LeaguePosition> getLeaguePositionsBySummoner(const Summoner &summoner);
+	std::list<LeaguePosition> getLeaguePositionsBySummoner(int64_t summonerId);
 
 
-	
+	Matchlist getMatchlistsByAccountRecent(int64_t account_id);
+
+	Matchlist getMatchlistsByAccount(int64_t account_id, int begin_index, int end_index, int queue, int season);
+
+	Match getMatchbyMatchId(int64_t game_id);
 }
 
 #endif // RIOT_API_HPP

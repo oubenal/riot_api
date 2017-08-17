@@ -25,17 +25,13 @@
 #include <string>
 
 const std::string styles = 
-"body { color: black; background: white; }\n"
-"span.red { color:red; }\n"
-"hr.half { width: 60%; margin-left: auto; margin-right: auto; }\n"
-"div.center { text-align: center; }\n"
-"div.notice { border: solid thin; padding: 1em; margin: 1em 0; "
-"background: #ddd; text-align: center; }"
-"table { width: 90%; margin-left: auto; margin-right: auto; }\n"
-"tr.title, td.title { color: white; background: black; font-weight: bold; "
-"text-align: center; }\n"
-"tr.data, td.data { background: #ddd; }\n"
-"td.form { background: #ddd; text-align: center; }\n"
+"body, html {width: 100%; height: 100%; margin: 0;}\n"
+".leftpane {width: 25%;height: 100%;float: left;background-color: darkslategray;border-collapse: collapse;padding: 0px 70px;}\n"
+".middlepane {width: 50%;height: 100%;float: left;background-color: royalblue;border-collapse: collapse;padding: 0px 70px;}\n"
+".match{width: 50%;height: 100%;float: left;background-color: brown;border-collapse: collapse;padding: 0px 70px;border : double;}\n"
+".rightpane {width: 25%;height: 100%;position: relative;float: right;background-color: yellow;border-collapse: collapse;}\n"
+".toppane {width: 100%;height: 100px;border-collapse: collapse;background-color: #4da6ff;}\n"
+"\n"
 ;
 
 #endif /* _STYLES_H_ */

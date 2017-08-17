@@ -20,14 +20,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\HtmlRender.cpp" />
+    <ClCompile Include="src\LEA_Project.cpp" />
     <ClCompile Include="src\Riot.cpp" />
     <ClCompile Include="src\RiotParser.cpp" />
+    <ClCompile Include="src\serverBD.cpp" />
     <ClCompile Include="src\URLReader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\riot_api\HtmlRender.h" />
+    <ClInclude Include="include\riot_api\LEA_Project.h" />
     <ClInclude Include="include\riot_api\Riot.h" />
     <ClInclude Include="include\riot_api\RiotObject.h" />
     <ClInclude Include="include\riot_api\RiotParser.h" />
+    <ClInclude Include="include\riot_api\serverBD.h" />
     <ClInclude Include="include\riot_api\URLReader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
