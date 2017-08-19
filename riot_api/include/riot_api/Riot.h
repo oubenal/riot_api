@@ -21,7 +21,7 @@ namespace Riot
 	std::list<LeaguePosition> getLeaguePositionsBySummoner(int64_t summonerId);
 
 
-	Matchlist getMatchlistsByAccountRecent(int64_t account_id);
+	Matchlist getMatchlistsByAccountRecent(int64_t account_id, int nb_game);
 
 	Matchlist getMatchlistsByAccount(int64_t account_id, int begin_index, int end_index, int queue, int season);
 

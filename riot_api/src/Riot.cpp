@@ -43,7 +43,7 @@ namespace Riot
 		return result;
 	}
 
-	std::string api_key = "RGAPI-1f8c573f-e95b-45d3-8c33-5c3a1e5c855f";
+	std::string api_key = "RGAPI-8a620b99-4faf-41ad-b9aa-d3a2b23094a0";
 	std::string base_url = "https://euw1.api.riotgames.com/lol/";
 
 	// ---------- API Resource: SUMMONER-V3 ---------- //
@@ -89,9 +89,9 @@ namespace Riot
 		return Riot::parseLeaguePositions(json);
 	}
 
-	Matchlist getMatchlistsByAccountRecent(int64_t account_id)
+	Matchlist getMatchlistsByAccountRecent(int64_t account_id, int nb_game)
 	{
-		return getMatchlistsByAccount(account_id, 0, 20, 420, 9); // 420, 440
+		return getMatchlistsByAccount(account_id, 0, nb_game, 420, 9); // 420, 440
 	}
 
 	Matchlist getMatchlistsByAccount(int64_t account_id, int begin_index, int end_index, int queue, int season)

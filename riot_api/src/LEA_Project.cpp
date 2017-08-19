@@ -5,6 +5,10 @@
 
 #include "riot_api/serverBD.h"
 
+#include <windows.h>
+#include <stdio.h>
+#include <tchar.h>
+
 namespace LEA_Project
 {
 	bool mycomparison(Riot::MatchReference& first, Riot::MatchReference& second)
@@ -57,7 +61,7 @@ namespace LEA_Project
 		Riot::Matchlist match_history = {};
 		if (!serverBD->getFromDBMatchReference(summoner.accountId, match_history))
 		{
-			match_history = Riot::getMatchlistsByAccountRecent(summoner.accountId);
+			match_history = Riot::getMatchlistsByAccountRecent(summoner.accountId, 5);
 			// insert into DB
 			serverBD->setInDBMatchReference(summoner.accountId, match_history);
 		}
@@ -136,62 +140,97 @@ namespace LEA_Project
 		auto serverBD = ServerBD::getInstance();
 
 		// GetSummoner
-		Riot::Summoner summoner = {};
-		if (!serverBD->getFromDBSummonerByName(name, summoner))
-		{
-			summoner = Riot::getSummonerSummonersByName(name);
-			// insert into DB
-			serverBD->setInDBSummoner(summoner);
-		}
+		auto summoner = getSummonerSummoners(name);
 		std::map<int, ChampionStats> champions_stats;
 		auto result = serverBD->getFromDBChampionStats(summoner.accountId, champions_stats);
-		if (false)
+		if (!result)
 		{
-			// GetMatchHistoryReference
-			Riot::Matchlist match_history = {};
-			auto nb_game_found = serverBD->getFromDBMatchReference(summoner.accountId, match_history);
-			auto match_history0 = Riot::getMatchlistsByAccount(summoner.accountId, nb_game_found, 10000, 420, 9);
-			//serverBD->setInDBMatchReference(summoner.accountId, match_history0);
-			match_history.matches.merge(match_history0.matches, mycomparison);
+			system("pause");
+			STARTUPINFO si;
+			PROCESS_INFORMATION pi;
 
-			//GetMatchHistory
+			ZeroMemory(&si, sizeof(si));
+			si.cb = sizeof(si);
+			ZeroMemory(&pi, sizeof(pi));
 
-			std::map<int, Riot::Champion> champions;
-
-			serverBD->getListChampions(champions);
-			for (auto match_ref : match_history.matches)
+			// Start the child process. 
+			auto str_command = "C:\\Riot_api\\ChampionsLoadStats.exe " + name;
+			char command[56 + 1];
+			strcpy_s(command, str_command.c_str());
+			auto process_information = CreateProcess(NULL,   // No module name (use command line)
+				TEXT(command),        // Command line
+				NULL,           // Process handle not inheritable
+				NULL,           // Thread handle not inheritable
+				FALSE,          // Set handle inheritance to FALSE
+				0,              // No creation flags
+				NULL,           // Use parent's environment block
+				NULL,           // Use parent's starting directory 
+				&si,            // Pointer to STARTUPINFO structure
+				&pi)           // Pointer to PROCESS_INFORMATION structure
+				;
+			if (!process_information)
 			{
-				Riot::Match match = {};
-				match.gameCreation = match_ref.timestamp;
-				try
-				{
-					match = Riot::getMatchbyMatchId(match_ref.gameId);
-					// insert into DB
-					//serverBD->setInDBParticipantsStats(match);
-				}
-				catch (Riot::URLReader::URLReaderException& e)
-				{
-					std::cout << "# ERR: " << e.what();
-				}
-
-				auto position = getPositionInMatch(match, summoner.id);
-				if (position < 0)
-					continue;
-				auto participant = match.participants[position - 1];
-
-				auto& champion_stats = champions_stats[participant.championId];
-				champion_stats.championId = participant.championId;
-				champion_stats.accountId = summoner.accountId;
-				champion_stats.cs += match.participants[position - 1].stats.totalMinionsKilled;
-				champion_stats.kills += match.participants[position - 1].stats.kills;
-				champion_stats.deaths += match.participants[position - 1].stats.deaths;
-				champion_stats.assists += match.participants[position - 1].stats.assists;
-				champion_stats.wins += match.participants[position - 1].stats.win ? 1 : 0;
-				champion_stats.losses += match.participants[position - 1].stats.win ? 0 : 1;
+				printf("CreateProcess failed (%d).\n", GetLastError());
 			}
-			serverBD->setInDBChampionStats(summoner.accountId, champions_stats);
+			// Wait until child process exits.
+			//auto r = WaitForSingleObject(pi.hProcess, INFINITE);
+			printf("Process created id = %d.\n", pi.dwProcessId);
+			// Close process and thread handles. 
+			CloseHandle(pi.hThread);
+			CloseHandle(pi.hProcess);
 		}
 		
+		return champions_stats;
+	}
+
+	std::map<int, ChampionStats> getSummonerChampionsStatsFromRiot(const std::string& name)
+	{
+		auto serverBD = ServerBD::getInstance();
+
+		auto summoner = getSummonerSummoners(name);
+		std::map<int, ChampionStats> champions_stats;
+
+		//Get champions list
+		std::map<int, Riot::Champion> champions;
+		serverBD->getListChampions(champions);
+		
+		// Get Match History References
+		Riot::Matchlist match_history = {};
+		auto nb_game_found = serverBD->getFromDBMatchReference(summoner.accountId, match_history);
+		auto match_history0 = Riot::getMatchlistsByAccount(summoner.accountId, nb_game_found, 10000, 420, 9);
+		match_history.matches.merge(match_history0.matches, mycomparison);
+
+		// Main loop
+		for (auto match_ref : match_history.matches)
+		{
+			Riot::Match match = {};
+			match.gameCreation = match_ref.timestamp;
+			try
+			{
+				match = Riot::getMatchbyMatchId(match_ref.gameId);
+			}
+			catch (Riot::URLReader::URLReaderException& e)
+			{
+				std::cout << "# ERR: " << e.what();
+			}
+
+			auto position = getPositionInMatch(match, summoner.id);
+			if (position < 0)
+				continue;
+			auto participant = match.participants[position - 1];
+
+			auto& champion_stats = champions_stats[participant.championId];
+			champion_stats.championId = participant.championId;
+			champion_stats.accountId = summoner.accountId;
+			champion_stats.cs += match.participants[position - 1].stats.totalMinionsKilled;
+			champion_stats.kills += match.participants[position - 1].stats.kills;
+			champion_stats.deaths += match.participants[position - 1].stats.deaths;
+			champion_stats.assists += match.participants[position - 1].stats.assists;
+			champion_stats.wins += match.participants[position - 1].stats.win ? 1 : 0;
+			champion_stats.losses += match.participants[position - 1].stats.win ? 0 : 1;
+		}
+		serverBD->setInDBChampionStats(summoner.accountId, champions_stats);
+
 		return champions_stats;
 	}
 }

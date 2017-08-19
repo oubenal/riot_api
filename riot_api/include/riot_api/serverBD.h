@@ -15,64 +15,6 @@
 namespace Helper
 {
 
-	namespace detail {
-
-		//
-		// these overloads perform the correct action depending on the argument type
-		//
-		inline void parameterise(sql::PreparedStatement& stmt, std::size_t column, std::string const& value) {
-			stmt.setString(column, value);
-		}
-
-		inline void parameterise(sql::PreparedStatement& stmt, std::size_t column, const char* value) {
-			stmt.setString(column, value);
-		}
-
-		inline void parameterise(sql::PreparedStatement& stmt, std::size_t column, int value) {
-			stmt.setInt(column, value);
-		}
-
-		inline void parameterise(sql::PreparedStatement& stmt, std::size_t column, long long value) {
-			stmt.setInt64(column, value);
-		}
-
-		inline void parameterise(sql::PreparedStatement& stmt, std::size_t column, double value) {
-			stmt.setDouble(column, value);
-		}
-
-		inline void parameterise(sql::PreparedStatement& stmt, std::size_t column, bool value) {
-			stmt.setInt(column, value);
-		}
-		//
-		// variadic parameteriser
-		//
-		template<class Tuple, std::size_t...Is>
-		void parameterise(sql::PreparedStatement& stmt, Tuple&& tuple, std::index_sequence<Is...>, std::size_t initial_index = 1)
-		{
-			using expand = int[];
-			void(expand{ 0,
-				(parameterise(stmt, Is + initial_index, std::get<Is>(std::forward<Tuple>(tuple))),0)...
-			});
-		};
-	}
-
-	template<class...Args>
-	void build_parameterised_query(sql::PreparedStatement& stmt, Args&&...args)
-	{
-		//
-		// in mysqcppconn, this bit would be
-		//
-		//auto stmt = con->prepareStatement(sql);
-
-		// but the rest would be the same
-
-		detail::parameterise(stmt,
-			std::forward_as_tuple(std::forward<Args>(args)...),
-			std::make_index_sequence<sizeof...(Args)>());
-
-	}
-
-
 	inline void assignValue(bool& var, const sql::ResultSet* result_set, const std::string&& column_name)
 	{
 		var = result_set->getBoolean(column_name);

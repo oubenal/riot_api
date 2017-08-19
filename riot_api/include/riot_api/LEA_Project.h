@@ -29,6 +29,8 @@ namespace LEA_Project
 	std::pair<std::vector<Riot::Match>, Riot::LeaguePosition> getSummonerHistory(const std::string &name);
 
 	std::map<int, ChampionStats> getSummonerChampionsStats(const std::string &name);
+
+	std::map<int, ChampionStats> getSummonerChampionsStatsFromRiot(const std::string &name);
 }
 
 #endif //  LEA_HPP
