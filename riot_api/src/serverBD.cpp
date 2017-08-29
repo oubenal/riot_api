@@ -508,6 +508,58 @@ int ServerBD::getListSpells(std::map<int, Riot::Spell>& spell_list) const
 	return 0; // Summoner not found in DB
 }
 
+int ServerBD::getChampionStatsRankByAllFromDB(int64_t accountId, int championId) const
+{
+	auto rank=0;
+	auto statement = con->createStatement();
+	auto query_base = "SELECT row_number FROM (SELECT @curRow := @curRow + 1 AS row_number, FIELD(FOO.accountId, '" + std::to_string(accountId) + "') AS rank FROM (SELECT s.name, s.accountId, (wins/(wins+losses)*100*LOG(cs.wins+cs.losses+1)) AS winrate FROM riot_api.championsstats AS cs INNER JOIN riot_api.summoner AS s ON s.accountId = cs.accountId WHERE cs.championId='" + std::to_string(championId) + "' ORDER BY winrate DESC) AS FOO JOIN (SELECT @curRow := 0) r) as BAR WHERE BAR.rank != 0;";
+	try
+	{
+		auto result_set = statement->executeQuery(query_base.c_str());
+		if (result_set->next())
+		{
+			Helper::assignValue(rank, result_set, "row_number");
+			delete result_set;
+			delete statement;
+			return rank;
+		}
+		delete result_set;
+		delete statement;
+		return 0; // Summoner not found in DB
+	}
+	catch (sql::SQLException e)
+	{
+		delete statement;
+		return 0; // Summoner not found in DB
+	}
+}
+
+int ServerBD::getChampionStatsRankByCountryFromDB(int64_t accountId, std::string country, int championId) const
+{
+	auto rank = 0;
+	auto statement = con->createStatement();
+	auto query_base = "SELECT row_number FROM (SELECT @curRow := @curRow + 1 AS row_number, FIELD(FOO.accountId, '" + std::to_string(accountId) + "') AS rank FROM (SELECT s.name, s.accountId, (wins/(wins+losses)*100*LOG(cs.wins+cs.losses+1)) AS winrate FROM riot_api.championsstats AS cs INNER JOIN (SELECT * FROM riot_api.summoner WHERE country = '" + country + "') AS s ON s.accountId = cs.accountId WHERE cs.championId='" + std::to_string(championId) + "' ORDER BY winrate DESC) AS FOO JOIN (SELECT @curRow := 0) r) as BAR WHERE BAR.rank != 0;";
+	try
+	{
+		auto result_set = statement->executeQuery(query_base.c_str());
+		if (result_set->next())
+		{
+			Helper::assignValue(rank, result_set, "row_number");
+			delete result_set;
+			delete statement;
+			return rank;
+		}
+		delete result_set;
+		delete statement;
+		return 0; // Summoner not found in DB
+	}
+	catch (sql::SQLException e)
+	{
+		delete statement;
+		return 0; // Summoner not found in DB
+	}
+}
+
 int ServerBD::getFromDBMatch(int64_t gameId, Riot::Match& match) const
 {
 	// Query DB

@@ -32,10 +32,8 @@ namespace LEA_Project
 		Summoner summoner = {};
 		if (!serverBD->getFromDBSummonerByName(name, summoner))
 		{
-			summoner.riotSummoner = Riot::getSummonerSummonersByName(name);
-			summoner.lastUpdate = time(nullptr) * 1000;
-			// insert into DB
-			serverBD->setInDBSummoner(summoner);
+			//TODO: do something first
+			return summoner;
 		}
 
 		return summoner;
@@ -48,9 +46,8 @@ namespace LEA_Project
 		std::list<Riot::LeaguePosition> league_positions;
 		if (!serverBD->getFromDBLeaguesBySummonerId(summoner.riotSummoner.id, league_positions))
 		{
-			league_positions = Riot::getLeaguePositionsBySummoner(summoner.riotSummoner.id);
-			// insert into DB
-			serverBD->setInDBLeagues(league_positions);
+			//TODO: do something first
+			return league_positions;
 		}
 
 		return league_positions;
@@ -63,9 +60,8 @@ namespace LEA_Project
 		Riot::Matchlist match_history = {};
 		if (!serverBD->getFromDBMatchReference(summoner.riotSummoner.accountId, match_history))
 		{
-			match_history = Riot::getMatchlistsByAccountRecent(summoner.riotSummoner.accountId, 5);
-			// insert into DB
-			serverBD->setInDBMatchReference(summoner.riotSummoner.accountId, match_history);
+			//TODO: do something first
+			return match_history;
 		}
 
 		return match_history;
@@ -83,32 +79,15 @@ namespace LEA_Project
 			Riot::Match match = {};
 			if (!serverBD->getFromDBMatch(match_ref.gameId, match))
 			{
-				try
-				{
-					match = Riot::getMatchbyMatchId(match_ref.gameId);
-					// insert into DB
-					serverBD->setInDBMatch(match);
-				}
-				catch (Riot::URLReader::URLReaderException& e)
-				{
-					std::cout << "# ERR: " << e.what();
-				}
+				//TODO: do something first
+				continue;
 			}
 			if (!serverBD->getFromDBParticipantStats(match_ref.gameId, match))
 			{
-				try
-				{
-					match = Riot::getMatchbyMatchId(match_ref.gameId);
-					// insert into DB
-					serverBD->setInDBMatch(match);
-					serverBD->setInDBParticipantsStats(match);
-				}
-				catch (Riot::URLReader::URLReaderException& e)
-				{
-					std::cout << "# ERR: " << e.what();
-				}
+				//TODO: do something first
+				continue;
 			}
-			//
+
 			for(auto& participant : match.participantIdentities)
 			{
 				auto name = participant.player.summonerName;
@@ -154,9 +133,16 @@ namespace LEA_Project
 		// GetSummoner
 		auto summoner = getSummonerSummoners(name);
 		std::map<int, ChampionStats> champions_stats;
-		while (!serverBD->getFromDBChampionStats(summoner.riotSummoner.accountId, champions_stats))
+		if (!serverBD->getFromDBChampionStats(summoner.riotSummoner.accountId, champions_stats))
 		{
-			getSummonerChampionsStatsFromRiot(name);
+			//TODO: do something first
+			return champions_stats;
+		}
+		for(auto &champion_stats : champions_stats)
+		{
+			champion_stats.second.rank_by_all = serverBD->getChampionStatsRankByAllFromDB(summoner.riotSummoner.accountId, champion_stats.first);
+			champion_stats.second.rank_by_country = serverBD->getChampionStatsRankByCountryFromDB(summoner.riotSummoner.accountId, summoner.country, champion_stats.first);
+
 		}
 		
 		return champions_stats;

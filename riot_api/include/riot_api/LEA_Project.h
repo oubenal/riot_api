@@ -23,6 +23,7 @@ namespace LEA_Project
 		double cs, kills, deaths, assists;
 		int wins, losses;
 		int64_t firstTimestamp, lastTimestamp;
+		int rank_by_country, rank_by_all;
 	};
 
 	int getPositionInMatch(Riot::Match& match, int64_t summoner_id);

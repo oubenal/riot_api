@@ -108,6 +108,10 @@ public:
 
 	int getListSpells(std::map<int, Riot::Spell>& spell_list) const;
 
+	int getChampionStatsRankByAllFromDB(int64_t accountId, int championId) const;
+
+	int getChampionStatsRankByCountryFromDB(int64_t accountId, std::string country, int championId) const;
+
 private:
 	ServerBD();// default constructor available only to members or friends of this class
 	ServerBD(const ServerBD &old) = delete; // disallow copy constructor

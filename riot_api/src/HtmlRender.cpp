@@ -141,10 +141,8 @@ namespace HtmlRender
 								played->add(cgicc::div(std::to_string(ratio) + "%").set("class", winratio_type).set("title", "Win Ratio"));
 								played->add(cgicc::div(std::to_string(stat_champ.wins + stat_champ.losses) + " Played").set("class", "Title"));
 							}
-							// TODO Rank;
-
-							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class","CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/"+ country +".png"))).add(p("<br>Rank#1").set("style", "margin: 0px")));
-							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/world.png"))).add(p("<br>Rank#1").set("style", "margin: 0px")));
+							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class","CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/"+ country +".png"))).add(p("<br>Rank#" + std::to_string(stat_champ.rank_by_country)).set("style", "margin: 0px")));
+							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/world.png"))).add(p("<br>Rank#" + std::to_string(stat_champ.rank_by_all)).set("style", "margin: 0px")));
 						}						
 					}
 				}
@@ -184,22 +182,22 @@ namespace HtmlRender
 
 							auto content = add_div(game_item, "Content");
 							{
-								auto victory_defeat = match.participants[0].stats.win;
 								auto follow_players_names_01 = add_div(content, "FollowPlayers Names");
 								{
 									auto result = add_div(follow_players_names_01, "Result");
 									{
-										if(victory_defeat)
+										if(position<=5 && win)
 											result->add(img().set("src", "http://localhost/LEAProject/victory.png").set("class", "Image").set("alt", "Victory"));
-										else
+										else if(position <= 5 && !win)
 											result->add(img().set("src", "http://localhost/LEAProject/defeat.png").set("class", "Image").set("alt", "Defeat"));
+										else
+											result->add(h1(".").set("class", "Image").set("alt", "Empty"));
 									}
 									
 									auto team01 = add_div(follow_players_names_01, "Team");
 									{
 										auto summoner01 = add_div(team01, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner01, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[0].player.country + ".png")));
@@ -214,7 +212,6 @@ namespace HtmlRender
 										}
 										auto summoner02 = add_div(team01, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner02, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[1].player.country + ".png")));
@@ -230,7 +227,6 @@ namespace HtmlRender
 										}
 										auto summoner03 = add_div(team01, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner03, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[2].player.country + ".png")));
@@ -246,7 +242,6 @@ namespace HtmlRender
 										}
 										auto summoner04 = add_div(team01, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner04, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[3].player.country + ".png")));
@@ -262,7 +257,6 @@ namespace HtmlRender
 										}
 										auto summoner05 = add_div(team01, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner05, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[4].player.country + ".png")));
@@ -294,7 +288,6 @@ namespace HtmlRender
 										auto spell01 = add_div(champion_display, "Spell");
 										{
 											auto spell_name = spells[match.participants[position - 1].spell1Id].key;
-											// TODO : get spell_name
 											std::string src = "//opgg-static.akamaized.net/images/lol/spell/" + spell_name + ".png?image=c_scale,w_22&amp;v=1";
 											spell01->add(img().set("src", src));
 										}
@@ -419,16 +412,17 @@ namespace HtmlRender
 								{
 									auto result = add_div(follow_players_names_02, "Result");
 									{
-										if (!victory_defeat)
+										if (position>5 && win)
 											result->add(img().set("src", "http://localhost/LEAProject/victory.png").set("class", "Image").set("alt", "Victory"));
-										else
+										else if (position>5 && !win)
 											result->add(img().set("src", "http://localhost/LEAProject/defeat.png").set("class", "Image").set("alt", "Defeat"));
+										else 
+											result->add(h1(".").set("class", "Image").set("alt", "Empty"));
 									}
 									auto team02 = add_div(follow_players_names_02, "Team");
 									{
 										auto summoner06 = add_div(team02, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner06, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[5].player.country + ".png")));
@@ -444,7 +438,6 @@ namespace HtmlRender
 										}
 										auto summoner07 = add_div(team02, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner07, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[6].player.country + ".png")));
@@ -460,7 +453,6 @@ namespace HtmlRender
 										}
 										auto summoner08 = add_div(team02, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner08, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[7].player.country + ".png")));
@@ -476,7 +468,6 @@ namespace HtmlRender
 										}
 										auto summoner09 = add_div(team02, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner09, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[8].player.country + ".png")));
@@ -492,7 +483,6 @@ namespace HtmlRender
 										}
 										auto summoner10 = add_div(team02, "Summoner");
 										{
-											// TODO : use country tag
 											auto country_image = add_div(summoner10, "CountryImage");
 											{
 												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[9].player.country + ".png")));
@@ -600,7 +590,6 @@ namespace HtmlRender
 					}
 					auto summoner_rating_medium = add_div(header, "SummonerRatingMedium");
 					{
-						// TODO : add Title
 						auto _id = 0;
 
 						switch (str2int(league.rank.c_str()))
@@ -633,7 +622,6 @@ namespace HtmlRender
 								{
 									tier_info->add(span(std::to_string(league.leaguePoints) + " LP").set("class", "LeaguePoints"));
 
-									// TODO : Compute Win Ratio
 									auto ratio = league.wins * 100 / (league.wins + league.losses);
 									tier_info->add(span().set("class", "WinLose").add(span(" / " + std::to_string(league.wins) + "W").set("class", "wins")).add(span(" " + std::to_string(league.losses) + "L").set("class", "losses")).add(br()).add(span("Win Ration "+ std::to_string(ratio)  + "%").set("class", "winratio")));
 								}
