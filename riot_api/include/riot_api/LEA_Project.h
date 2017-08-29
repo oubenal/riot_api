@@ -13,6 +13,7 @@ namespace LEA_Project
 	{
 		Riot::Summoner riotSummoner;
 		int64_t lastUpdate;
+		std::string country;
 	};
 
 	struct ChampionStats
@@ -21,6 +22,7 @@ namespace LEA_Project
 		int championId;
 		double cs, kills, deaths, assists;
 		int wins, losses;
+		int64_t firstTimestamp, lastTimestamp;
 	};
 
 	int getPositionInMatch(Riot::Match& match, int64_t summoner_id);

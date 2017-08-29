@@ -102,9 +102,11 @@ public:
 
 	int getFromDBChampionStats(int64_t accountId, std::map<int, LEA_Project::ChampionStats>& champions_stats) const;
 	
-	void setInDBChampionStats(int64_t accountId, const std::map<int, LEA_Project::ChampionStats>& champions_stats) const;
+	void setInDBChampionStats(int64_t accountId, const LEA_Project::ChampionStats& champion_stats) const;
 
 	int getListChampions(std::map<int, Riot::Champion>& champion_list) const;
+
+	int getListSpells(std::map<int, Riot::Spell>& spell_list) const;
 
 private:
 	ServerBD();// default constructor available only to members or friends of this class

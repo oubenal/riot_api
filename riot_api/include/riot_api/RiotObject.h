@@ -40,6 +40,13 @@ namespace Riot
 		std::string name;
 	};
 
+	struct Spell
+	{
+		int id;
+		std::string key;
+		std::string name;
+	};
+
 	struct MiniSeries
 	{
 		/* Example :
@@ -137,6 +144,8 @@ namespace Riot
 		int profileIcon;
 		int64_t summonerId;
 		int64_t accountId;
+		//TODO : remove this champ adecquatly
+		std::string country;
 	};
 
 	struct ParticipantIdentity

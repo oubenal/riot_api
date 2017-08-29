@@ -31,6 +31,7 @@ int ServerBD::getFromDBSummonerByName(const std::string& name, LEA_Project::Summ
 	// Query DB
 	auto statement = con->createStatement();
 	auto query_base = "SELECT * FROM riot_api.summoner as s WHERE s.name = '" + name + "';";
+	auto c = query_base.c_str();
 	try
 	{
 		auto result_set = statement->executeQuery(query_base.c_str());
@@ -43,6 +44,7 @@ int ServerBD::getFromDBSummonerByName(const std::string& name, LEA_Project::Summ
 			Helper::assignValue(summoner.riotSummoner.summonerLevel, result_set, "summonerLevel");
 			Helper::assignValue(summoner.riotSummoner.profileIconId, result_set, "profileIconId");
 			Helper::assignValue(summoner.lastUpdate, result_set, "lastUpdate");
+			Helper::assignValue(summoner.country, result_set, "country");
 			delete result_set;
 			delete statement;
 			return 1;
@@ -420,38 +422,35 @@ int ServerBD::getFromDBChampionStats(int64_t accountId, std::map<int, LEA_Projec
 	}
 }
 
-void ServerBD::setInDBChampionStats(int64_t accountId, const std::map<int, LEA_Project::ChampionStats>& champions_stats) const
+void ServerBD::setInDBChampionStats(int64_t accountId, const LEA_Project::ChampionStats& champion_stats) const
 {
-	std::string query_base = "INSERT INTO riot_api.championsstats(championId, kills, deaths, assists, cs, wins, losses, accountId) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kills = (kills*(wins+losses) + VALUES(kills))/(wins+losses+VALUES(wins)+VALUES(losses)), deaths = (deaths*(wins+losses) + VALUES(deaths))/(wins+losses+VALUES(wins)+VALUES(losses)), assists = (assists*(wins+losses) + VALUES(assists))/(wins+losses+VALUES(wins)+VALUES(losses)), cs = cs + VALUES(cs), wins = wins + VALUES(wins), losses = losses + VALUES(losses);";
+	std::string query_base = "INSERT INTO riot_api.championsstats(championId, kills, deaths, assists, cs, wins, losses, accountId) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE kills = kills + VALUES(kills), deaths = deaths + VALUES(deaths), assists = assists + VALUES(assists), cs = cs + VALUES(cs), wins = wins + VALUES(wins), losses = losses + VALUES(losses);";
 	auto prep_stmt = std::unique_ptr<sql::PreparedStatement>(con->prepareStatement(query_base));
 
-	for (auto champion_stats : champions_stats)
-	{
-		Helper::setStatment(*prep_stmt, 1, champion_stats.second.championId);
-		Helper::setStatment(*prep_stmt, 2, champion_stats.second.kills);
-		Helper::setStatment(*prep_stmt, 3, champion_stats.second.deaths);
-		Helper::setStatment(*prep_stmt, 4, champion_stats.second.assists);
-		Helper::setStatment(*prep_stmt, 5, champion_stats.second.cs);
-		Helper::setStatment(*prep_stmt, 6, champion_stats.second.wins);
-		Helper::setStatment(*prep_stmt, 7, champion_stats.second.losses);
-		Helper::setStatment(*prep_stmt, 8, champion_stats.second.accountId);
+	Helper::setStatment(*prep_stmt, 1, champion_stats.championId);
+	Helper::setStatment(*prep_stmt, 2, champion_stats.kills);
+	Helper::setStatment(*prep_stmt, 3, champion_stats.deaths);
+	Helper::setStatment(*prep_stmt, 4, champion_stats.assists);
+	Helper::setStatment(*prep_stmt, 5, champion_stats.cs);
+	Helper::setStatment(*prep_stmt, 6, champion_stats.wins);
+	Helper::setStatment(*prep_stmt, 7, champion_stats.losses);
+	Helper::setStatment(*prep_stmt, 8, champion_stats.accountId);
 
-		try
-		{
-			prep_stmt->executeUpdate();
-		}
-		catch (sql::SQLException& e)
-		{
-			std::cout << "#Method : setInDBParticipantsStats \n";
-			std::cout << "# ERR: SQLException in " << __FILE__;
-			std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
-			std::cout << "# ERR: " << e.what();
-			std::cout << " (MySQL error code: " << e.getErrorCode();
-			std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
-		}
+	try
+	{
+		prep_stmt->executeUpdate();
+	}
+	catch (sql::SQLException& e)
+	{
+		std::cout << "#Method : setInDBParticipantsStats \n";
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+	}
 
 		//query_base += to_string(p.participantId) + "', '" + to_string(gameId) + "', '" + p.highestAchievedSeasonTier + "', '" + to_string(p.spell1Id) + "', '" + to_string(p.spell2Id) + "', '" + to_string(p.teamId) + "', '" + to_string(p.championId) + "', '" + to_string(p.stats.win ? 1:0) + "', '" + to_string(p.stats.kills) + "', '" + to_string(p.stats.deaths) + "', '" + to_string(p.stats.assists) + "', '" + to_string(p.stats.totalMinionsKilled) + "');";
-	}
 	//delete prep_stmt;
 }
 
@@ -474,6 +473,32 @@ int ServerBD::getListChampions(std::map<int, Riot::Champion>& champion_list) con
 			champion_list[champion.id] = champion;
 		}
 		while (result_set->next());
+		delete result_set;
+		delete statement;
+		return 1;
+	}
+	delete result_set;
+	delete statement;
+	return 0; // Summoner not found in DB
+}
+
+int ServerBD::getListSpells(std::map<int, Riot::Spell>& spell_list) const
+{
+	// Query DB
+	auto statement = con->createStatement();
+	auto result_set = statement->executeQuery("SELECT * FROM riot_api.spells;");
+
+	if (result_set->next())
+	{
+		do
+		{
+			Riot::Spell spell = {};
+			Helper::assignValue(spell.id, result_set, "id");
+			Helper::assignValue(spell.key, result_set, "key");
+			Helper::assignValue(spell.name, result_set, "name");
+
+			spell_list[spell.id] = spell;
+		} while (result_set->next());
 		delete result_set;
 		delete statement;
 		return 1;

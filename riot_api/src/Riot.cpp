@@ -43,7 +43,7 @@ namespace Riot
 		return result;
 	}
 
-	std::string api_key = "RGAPI-c9e33465-790b-4c8d-931e-23aeb62b8ab8";
+	std::string api_key = "RGAPI-c20acefb-f668-4849-b8a2-a3edd072759f";
 	std::string base_url = "https://euw1.api.riotgames.com/lol/";
 
 	// ---------- API Resource: SUMMONER-V3 ---------- //
@@ -62,7 +62,7 @@ namespace Riot
 		json.Parse<0>(URLReader::read(url).c_str());
 		Summoner summoner = {};
 		summoner = parseSummonerSummoners(json);
-
+		//summoner.name = name;
 		return summoner;
 	}
 
@@ -91,11 +91,12 @@ namespace Riot
 	Matchlist getMatchlistsByAccount(int64_t account_id, int begin_index, int end_index, int queue, int season)
 	{
 		///lol/match/v3/matchlists/by-account/{accountId}
+		auto token = end_index == -1 ? "" : ("&endIndex=" + std::to_string(end_index));
 		auto url =
 			base_url +
 			"match/v3/matchlists/by-account/" +
 			std::to_string(account_id) +
-			"?queue=" + std::to_string(queue) + "&endIndex=" + std::to_string(end_index) + "&season=" + std::to_string(season) + "&beginIndex=" + std::to_string(begin_index) + "&api_key=" +
+			"?queue=" + std::to_string(queue) + token + "&season=" + std::to_string(season) + "&beginIndex=" + std::to_string(begin_index) + "&api_key=" +
 			api_key;
 
 		//JSON parse

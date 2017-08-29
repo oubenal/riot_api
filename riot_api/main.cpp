@@ -65,7 +65,7 @@ int cgicc_render()
 		else
 			name = strItr->getValue();
 
-		//string name = "smurfAtlas";
+		
 		const_form_iterator whichFormItr = cgi.getElement("whichForm");
 		if (whichFormItr == cgi.getElements().end())
 		{
@@ -84,7 +84,6 @@ int cgicc_render()
 			string form = whichFormItr->getValue();
 			if (form == "Search")
 			{
-				system("pause");
 				auto summoner = LEA_Project::getSummonerSummoners(name);
 				if (summoner.riotSummoner.name.empty())
 				{

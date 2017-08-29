@@ -35,6 +35,7 @@ namespace HtmlRender
 	}
 	
 	std::map<int, Riot::Champion> champions;
+	std::map<int, Riot::Spell> spells;
 
 	bool mycomparison1(const LEA_Project::ChampionStats& lhs, const LEA_Project::ChampionStats& rhs) {
 		return (lhs.wins + lhs.losses>rhs.wins + rhs.losses);
@@ -42,7 +43,7 @@ namespace HtmlRender
 
 
 
-	cgicc::div* sideContent(cgicc::div* summoner_layout, const std::map<int, LEA_Project::ChampionStats> ss)
+	cgicc::div* sideContent(cgicc::div* summoner_layout, const std::string& country, const std::map<int, LEA_Project::ChampionStats> ss)
 	{
 		std::set<LEA_Project::ChampionStats, bool(*)(const LEA_Project::ChampionStats&, const LEA_Project::ChampionStats&)> stats_summoner(&mycomparison1);
 		for (auto elem : ss)
@@ -52,15 +53,20 @@ namespace HtmlRender
 
 		auto side_content = add_div(summoner_layout, "SideContent");
 		{
-			auto box = add_div(side_content, "Box");
+			auto _index_stats = 0;
+			for(auto stat_champ : stats_summoner)
 			{
-				auto most_champion_content = add_div(box, "MostChampionContent");
+				if(++_index_stats > 3)
+					break;
+
+				auto box = add_div(side_content, "Box");
 				{
-					for (auto stat_champ : stats_summoner)
+					auto most_champion_content = add_div(box, "MostChampionContent");
 					{
 						auto champion_box = add_div(most_champion_content, "ChampionBox Ranked");
 						{
-							champion_box->add(cgicc::div().set("class", "Face").set("title", champions[stat_champ.championId].name).add(a().add(img().set("class", "ChampionImage").set("src", "//opgg-static.akamaized.net/images/lol/champion/" + champions[stat_champ.championId].key + ".png?image=c_scale,w_45&amp;v=1"))));
+							//add title
+							champion_box->add(cgicc::div().set("class", "Face").set("title", champions[stat_champ.championId].name).add(cgicc::div(".").set("class", "borderImage").set("style", "position: absolute;	left: -22px; top: -33px; width: 120px; height: 120px; background: url(./stats_0"+ std::to_string(_index_stats) +".png) no-repeat center bottom")).add(a().add(img().set("class", "ChampionImage").set("src", "//opgg-static.akamaized.net/images/lol/champion/" + champions[stat_champ.championId].key + ".png?image=c_scale,w_45&amp;v=1"))));
 							auto champion_info = add_div(champion_box, "ChampionInfo");
 							{
 								champion_info->add(cgicc::div().set("class", "ChampionName").set("title", champions[stat_champ.championId].name).add(a(champions[stat_champ.championId].name)));
@@ -135,12 +141,15 @@ namespace HtmlRender
 								played->add(cgicc::div(std::to_string(ratio) + "%").set("class", winratio_type).set("title", "Win Ratio"));
 								played->add(cgicc::div(std::to_string(stat_champ.wins + stat_champ.losses) + " Played").set("class", "Title"));
 							}
-						}
+							// TODO Rank;
+
+							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class","CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/"+ country +".png"))).add(p("<br>Rank#1").set("style", "margin: 0px")));
+							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/world.png"))).add(p("<br>Rank#1").set("style", "margin: 0px")));
+						}						
 					}
 				}
-
-				most_champion_content->add(cgicc::div().set("class", "MoreButton").add(a("Show More").set("href", "#").set("class", "Action")));
 			}
+			
 		}
 
 		return side_content;
@@ -154,14 +163,16 @@ namespace HtmlRender
 			{
 				auto _content = add_div(game_list_container, "Content");
 				{
+					auto _index_list = 0;
 					auto game_item_list = add_div(_content, "GameItemList");
+					for(auto match : matchs)
 					{
-						int max_list = 22;
-						for (auto match : matchs)
+						if(++_index_list > 3)
 						{
-							max_list--;
-							if (!max_list)
-								break;
+							_index_list = 0;
+							game_item_list = add_div(_content, "GameItemList");
+						}
+						{
 							auto position = LEA_Project::getPositionInMatch(match, summoner.id);
 							auto win = match.participants[position - 1].stats.win;
 
@@ -173,9 +184,134 @@ namespace HtmlRender
 
 							auto content = add_div(game_item, "Content");
 							{
+								auto victory_defeat = match.participants[0].stats.win;
+								auto follow_players_names_01 = add_div(content, "FollowPlayers Names");
+								{
+									auto result = add_div(follow_players_names_01, "Result");
+									{
+										if(victory_defeat)
+											result->add(img().set("src", "http://localhost/LEAProject/victory.png").set("class", "Image").set("alt", "Victory"));
+										else
+											result->add(img().set("src", "http://localhost/LEAProject/defeat.png").set("class", "Image").set("alt", "Defeat"));
+									}
+									
+									auto team01 = add_div(follow_players_names_01, "Team");
+									{
+										auto summoner01 = add_div(team01, "Summoner");
+										{
+											// TODO : use country tag
+											auto country_image = add_div(summoner01, "CountryImage");
+											{
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[0].player.country + ".png")));
+											}
+											auto champion_image = add_div(summoner01, "ChampionImage");
+											{
+												auto champ_name = champions[match.participants[0].championId].name;
+												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[0].championId].key + " splite")));
+											}
+											// TODO : link to summoner_name_page
+											auto summoner_name = add_div(summoner01, "SummonerName", match.participantIdentities[0].player.summonerName);
+										}
+										auto summoner02 = add_div(team01, "Summoner");
+										{
+											// TODO : use country tag
+											auto country_image = add_div(summoner02, "CountryImage");
+											{
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[1].player.country + ".png")));
+											}
+											auto champion_image = add_div(summoner02, "ChampionImage");
+											{
+												auto champ_name = champions[match.participants[1].championId].name;
+												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[1].championId].key + " splite")));
+											}
+											// TODO : link to summoner_name_page
+											auto summoner_name = add_div(summoner02, "SummonerName", match.participantIdentities[1].player.summonerName);
+
+										}
+										auto summoner03 = add_div(team01, "Summoner");
+										{
+											// TODO : use country tag
+											auto country_image = add_div(summoner03, "CountryImage");
+											{
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[2].player.country + ".png")));
+											}
+											auto champion_image = add_div(summoner03, "ChampionImage");
+											{
+												auto champ_name = champions[match.participants[2].championId].name;
+												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[2].championId].key + " splite")));
+											}
+											// TODO : link to summoner_name_page
+											auto summoner_name = add_div(summoner03, "SummonerName", match.participantIdentities[2].player.summonerName);
+
+										}
+										auto summoner04 = add_div(team01, "Summoner");
+										{
+											// TODO : use country tag
+											auto country_image = add_div(summoner04, "CountryImage");
+											{
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[3].player.country + ".png")));
+											}
+											auto champion_image = add_div(summoner04, "ChampionImage");
+											{
+												auto champ_name = champions[match.participants[3].championId].name;
+												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[3].championId].key + " splite")));
+											}
+											// TODO : link to summoner_name_page
+											auto summoner_name = add_div(summoner04, "SummonerName", match.participantIdentities[3].player.summonerName);
+
+										}
+										auto summoner05 = add_div(team01, "Summoner");
+										{
+											// TODO : use country tag
+											auto country_image = add_div(summoner05, "CountryImage");
+											{
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[4].player.country + ".png")));
+											}
+											auto champion_image = add_div(summoner05, "ChampionImage");
+											{
+												auto champ_name = champions[match.participants[4].championId].name;
+												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[4].championId].key + " splite")));
+											}
+											// TODO : link to summoner_name_page
+											auto summoner_name = add_div(summoner05, "SummonerName", match.participantIdentities[4].player.summonerName);
+
+										}
+									}
+								}
 								auto game_stats = add_div(content, "GameStats");
 								{
-									auto game_type = add_div(game_stats, "GameType", "Ranked Solo");
+									auto champ_name = champions[match.participants[position - 1].championId].key;
+									auto hours = static_cast<int>(match.gameDuration / 60 * 60);
+									auto minutes = static_cast<int>((match.gameDuration / 60) % 60);
+									auto seconds = static_cast<int>(match.gameDuration % 60);
+
+									auto champion_name = add_div(game_stats, "ChampionName");
+									{
+										champion_name->add(a(champ_name).set("href", "#").set("target", "_self"));
+									}
+									auto champion_display = add_div(game_stats, "Championdisplay");
+									{
+										auto spell01 = add_div(champion_display, "Spell");
+										{
+											auto spell_name = spells[match.participants[position - 1].spell1Id].key;
+											// TODO : get spell_name
+											std::string src = "//opgg-static.akamaized.net/images/lol/spell/" + spell_name + ".png?image=c_scale,w_22&amp;v=1";
+											spell01->add(img().set("src", src));
+										}
+										auto champion_image = add_div(champion_display, "ChampionImage");
+										{
+											auto src = "//opgg-static.akamaized.net/images/lol/champion/" + champ_name + ".png?image=c_scale,w_46&amp;v=1";
+											champion_image->add(a(HTMLAttribute("href", "#")).add(img().set("src", src).set("class", "Image").set("alt", champ_name)));
+										}
+										auto spell02 = add_div(champion_display, "Spell");
+										{
+											auto spell_name = spells[match.participants[position - 1].spell2Id].key;
+											std::string src = "//opgg-static.akamaized.net/images/lol/spell/" + spell_name + ".png?image=c_scale,w_22&amp;v=1";
+											spell02->add(img().set("src", src));
+										}
+									}
+									auto game_result = add_div(game_stats, "GameResult", win ? "Victory" : "Defeat");
+									cgicc::div* timestamp;
 									{
 										int64_t time_now = time(nullptr) * 1000;
 										auto diff = time_now - match.gameCreation;
@@ -184,70 +320,32 @@ namespace HtmlRender
 										auto minutes = static_cast<int>(diff / (1000 * 60));
 										auto seconds = static_cast<int>(diff) / 1000;
 										if (days)
-											auto timestamp = add_div(game_stats, "TimeStamp", std::to_string(days) + " days ago");
+											timestamp = add_div(game_stats, "TimeStamp", std::to_string(days) + " days ago");
 										else
 										{
 											if (hours)
-												auto timestamp = add_div(game_stats, "TimeStamp", std::to_string(hours) + " hours ago");
+												timestamp = add_div(game_stats, "TimeStamp", std::to_string(hours) + " hours ago");
 											else
 											{
 												if (minutes)
-													auto timestamp = add_div(game_stats, "TimeStamp", std::to_string(minutes) + " minutes ago");
+													timestamp = add_div(game_stats, "TimeStamp", std::to_string(minutes) + " minutes ago");
 												else
-													auto timestamp = add_div(game_stats, "TimeStamp", std::to_string(seconds) + " seconds ago");
+													timestamp = add_div(game_stats, "TimeStamp", std::to_string(seconds) + " seconds ago");
 											}
 										}
 									}
+									auto game_length = add_div(game_stats, "TimeStamp", std::to_string(minutes) + "m:" + std::to_string(minutes) + "s");									
 									auto bar = add_div(game_stats, "Bar", ".");
-									auto game_result = add_div(game_stats, "GameResult", win ? "Victory" : "Defeat");
-									{
-										auto hours = static_cast<int>(match.gameDuration / 60 * 60);
-										auto minutes = static_cast<int>((match.gameDuration / 60) % 60);
-										auto seconds = static_cast<int>(match.gameDuration % 60);
-										auto game_length = add_div(game_stats, "GameLength", std::to_string(minutes) + "m:" + std::to_string(minutes) + "s");
-									}
-								}
-								auto game_setting_info = add_div(content, "GameSettingInfo");
-								{
-									auto champ_name = champions[match.participants[position - 1].championId].key;
-
-									auto champion_image = add_div(game_setting_info, "ChampionImage");
-									{
-										auto src = "//opgg-static.akamaized.net/images/lol/champion/" + champ_name + ".png?image=c_scale,w_46&amp;v=1";
-										champion_image->add(a(HTMLAttribute("href", "#")).add(img().set("src", src).set("class", "Image").set("alt", champ_name)));
-									}
-									auto summoner_spell = add_div(game_setting_info, "SummonerSpell");
-									{
-										auto spell01 = add_div(summoner_spell, "Spell");
-										{
-											auto spell_name = match.participants[position - 1].spell1Id;
-											// TODO : get spell_name
-											std::string src = "//opgg-static.akamaized.net/images/lol/spell/SummonerFlash.png?image=c_scale,w_22&amp;v=1";
-											spell01->add(img().set("src", src));
-										}
-										auto spell02 = add_div(summoner_spell, "Spell");
-										{
-											auto spell_name = match.participants[position - 1].spell2Id;
-											// TODO : get spell_name
-											std::string src = "//opgg-static.akamaized.net/images/lol/spell/SummonerTeleport.png?image=c_scale,w_22&amp;v=1";
-											spell02->add(img().set("src", src));
-										}
-									}
-									auto champion_name = add_div(game_setting_info, "ChampionName");
-									{
-										champion_name->add(a(champ_name).set("href", "#").set("target", "_self"));
-									}
-								}
-								auto kda = add_div(content, "KDA");
-								{
-									auto kda_d = add_div(kda, "KDA");
+									auto kda_d = add_div(game_stats, "KDA");
 									{
 										auto sum_stats = match.participants[position - 1].stats;
 										kda_d->add(span(std::to_string(sum_stats.kills) + "  /  ", HTMLAttribute("class", "Kill")));
 										kda_d->add(span(std::to_string(sum_stats.deaths), HTMLAttribute("class", "Death")));
 										kda_d->add(span("  /  " + std::to_string(sum_stats.assists), HTMLAttribute("class", "Assist")));
 									}
-									auto kda_ratio = add_div(kda, "KDARatio");
+									// TODO : kill participation
+									auto ck_rate = add_div(game_stats, "CKRate", "P/Kill -1%");
+									auto kda_ratio = add_div(game_stats, "KDARatio");
 									{
 										auto sum_stats = match.participants[position - 1].stats;
 										float ratio = sum_stats.kills + sum_stats.assists;
@@ -266,22 +364,15 @@ namespace HtmlRender
 											stream << std::fixed << std::setprecision(2) << ratio;
 										kda_ratio->add(span(stream.str() + " KDA", HTMLAttribute("class", "KDARatio")));
 									}
-								}
-								auto stats = add_div(content, "Stats");
-								{
-									auto level = add_div(stats, "Level", "Level" + std::to_string(match.participants[position - 1].stats.champLevel));
-									auto cs = add_div(stats, "CS");
+									auto level = add_div(game_stats, "Level", "Level" + std::to_string(match.participants[position - 1].stats.champLevel));
+									auto cs = add_div(game_stats, "CS");
 									{
 										cs->add(span(std::to_string(match.participants[position - 1].stats.totalMinionsKilled) + "CS").set("class", "CS tip"));
 									}
-									auto ward = add_div(stats, "Ward");
-									{
-										ward->add(span(std::to_string(match.participants[position - 1].stats.visionWardsBoughtInGame) + " Control Ward", HTMLAttribute("class", "wards vision")));
-									}
-									// TODO : kill participation
-									auto ck_rate = add_div(stats, "CKRate", "P/Kill -1%");
+
 								}
-								auto items = add_div(content, "Items");
+								/*
+								 auto items = add_div(content, "Items");
 								{
 									auto item01 = add_div(items, "Item");
 									{
@@ -322,98 +413,25 @@ namespace HtmlRender
 										item00->add(img(HTMLAttribute("src", src)));
 									}
 								}
-								auto follow_players_names = add_div(content, "FollowPlayers Names");
+								
+								 */
+								auto follow_players_names_02 = add_div(content, "FollowPlayers Names");
 								{
-									auto team01 = add_div(follow_players_names, "Team");
+									auto result = add_div(follow_players_names_02, "Result");
 									{
-										auto summoner01 = add_div(team01, "Summoner");
-										{
-											// TODO : use country tag
-											auto country_image = add_div(summoner01, "CountryImage");
-											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
-											}
-											auto champion_image = add_div(summoner01, "ChampionImage");
-											{
-												auto champ_name = champions[match.participants[0].championId].name;
-												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[0].championId].key + " splite")));
-											}
-											// TODO : link to summoner_name_page
-											auto summoner_name = add_div(summoner01, "SummonerName", match.participantIdentities[0].player.summonerName);
-										}
-										auto summoner02 = add_div(team01, "Summoner");
-										{
-											// TODO : use country tag
-											auto country_image = add_div(summoner02, "CountryImage");
-											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
-											}
-											auto champion_image = add_div(summoner02, "ChampionImage");
-											{
-												auto champ_name = champions[match.participants[1].championId].name;
-												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[1].championId].key + " splite")));
-											}
-											// TODO : link to summoner_name_page
-											auto summoner_name = add_div(summoner02, "SummonerName", match.participantIdentities[1].player.summonerName);
-
-										}
-										auto summoner03 = add_div(team01, "Summoner");
-										{
-											// TODO : use country tag
-											auto country_image = add_div(summoner03, "CountryImage");
-											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
-											}
-											auto champion_image = add_div(summoner03, "ChampionImage");
-											{
-												auto champ_name = champions[match.participants[2].championId].name;
-												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[2].championId].key + " splite")));
-											}
-											// TODO : link to summoner_name_page
-											auto summoner_name = add_div(summoner03, "SummonerName", match.participantIdentities[2].player.summonerName);
-
-										}
-										auto summoner04 = add_div(team01, "Summoner");
-										{
-											// TODO : use country tag
-											auto country_image = add_div(summoner04, "CountryImage");
-											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
-											}
-											auto champion_image = add_div(summoner04, "ChampionImage");
-											{
-												auto champ_name = champions[match.participants[3].championId].name;
-												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[3].championId].key + " splite")));
-											}
-											// TODO : link to summoner_name_page
-											auto summoner_name = add_div(summoner04, "SummonerName", match.participantIdentities[3].player.summonerName);
-
-										}
-										auto summoner05 = add_div(team01, "Summoner");
-										{
-											// TODO : use country tag
-											auto country_image = add_div(summoner05, "CountryImage");
-											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
-											}
-											auto champion_image = add_div(summoner05, "ChampionImage");
-											{
-												auto champ_name = champions[match.participants[4].championId].name;
-												champion_image->add(cgicc::div(champ_name, HTMLAttribute("class", champions[match.participants[4].championId].key + " splite")));
-											}
-											// TODO : link to summoner_name_page
-											auto summoner_name = add_div(summoner05, "SummonerName", match.participantIdentities[4].player.summonerName);
-
-										}
+										if (!victory_defeat)
+											result->add(img().set("src", "http://localhost/LEAProject/victory.png").set("class", "Image").set("alt", "Victory"));
+										else
+											result->add(img().set("src", "http://localhost/LEAProject/defeat.png").set("class", "Image").set("alt", "Defeat"));
 									}
-									auto team02 = add_div(follow_players_names, "Team");
+									auto team02 = add_div(follow_players_names_02, "Team");
 									{
 										auto summoner06 = add_div(team02, "Summoner");
 										{
 											// TODO : use country tag
 											auto country_image = add_div(summoner06, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[5].player.country + ".png")));
 											}
 											auto champion_image = add_div(summoner06, "ChampionImage");
 											{
@@ -429,7 +447,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner07, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[6].player.country + ".png")));
 											}
 											auto champion_image = add_div(summoner07, "ChampionImage");
 											{
@@ -445,7 +463,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner08, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[7].player.country + ".png")));
 											}
 											auto champion_image = add_div(summoner08, "ChampionImage");
 											{
@@ -461,7 +479,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner09, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[8].player.country + ".png")));
 											}
 											auto champion_image = add_div(summoner09, "ChampionImage");
 											{
@@ -477,7 +495,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner10, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/" + match.participantIdentities[9].player.country + ".png")));
 											}
 											auto champion_image = add_div(summoner10, "ChampionImage");
 											{
@@ -492,11 +510,20 @@ namespace HtmlRender
 								}
 
 							}
-							//cout << *game_item_wrap << endl;
 						}
 					}
-
-					_content->add(cgicc::div().set("class", "GameMoreButton Box").set("title", "GIMMMME MOOOOOOORE").add(a("Show More").set("href", "#").set("class", "Button")));
+					if(++_index_list > 3)
+					{
+						game_item_list = add_div(_content, "GameItemList");
+						
+					}
+					else
+					{
+						auto game_item_wrap = add_div(game_item_list, "GameItemWrap");
+						auto game_item = add_div(game_item_wrap, "GameItem");
+						auto content = add_div(game_item, "Content");
+						content->add(cgicc::div().set("class", "GameMoreButton Box").set("title", "GIMMMME MOOOOOOORE").add(a("Show More").set("href", "#").set("class", "Button")));
+					}
 				}
 			}
 
@@ -564,18 +591,18 @@ namespace HtmlRender
 						}
 					}
 					{
+						auto rank = add_div(profile, "Rank");
+						{
+							rank->add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block; vertical-align: middle; width: 18px;").add(img().set("src", "http://localhost/LEAProject/icons/"+summoner.country+".png")));
+						}
 						profile->add(cgicc::div(".").set("class", "Information").add(span(summoner.riotSummoner.name).set("class", "Name")));
-						//auto buttons = add_div(profile, "Buttons");
 						profile->add(cgicc::div().set("class", "Buttons").add(button("Update").set("class", "Button SemiRound Blue").set("onclick", ";").set("style", "position: relative;")));
 					}
-
-				}
-				auto box = add_div(summoner_layout, "Box");
-				{
-					// TODO : add Title
-					int _id = 0;
-					auto summoner_rating_medium = add_div(box, "SummonerRatingMedium");
+					auto summoner_rating_medium = add_div(header, "SummonerRatingMedium");
 					{
+						// TODO : add Title
+						auto _id = 0;
+
 						switch (str2int(league.rank.c_str()))
 						{
 						case str2int("I"):
@@ -607,28 +634,31 @@ namespace HtmlRender
 									tier_info->add(span(std::to_string(league.leaguePoints) + " LP").set("class", "LeaguePoints"));
 
 									// TODO : Compute Win Ratio
-									tier_info->add(span().set("class", "WinLose").add(span(" / " + std::to_string(league.wins) + "W").set("class", "wins")).add(span(" " + std::to_string(league.losses) + "L").set("class", "losses")).add(br()).add(span("Win Ration ?%").set("class", "winratio")));
+									auto ratio = league.wins * 100 / (league.wins + league.losses);
+									tier_info->add(span().set("class", "WinLose").add(span(" / " + std::to_string(league.wins) + "W").set("class", "wins")).add(span(" " + std::to_string(league.losses) + "L").set("class", "losses")).add(br()).add(span("Win Ration "+ std::to_string(ratio)  + "%").set("class", "winratio")));
 								}
 
 							}
 							tier_rank_info->add(cgicc::div(league.leagueName).set("class", "Leaguename"));
 						}
-
 					}
 				}
+				
 				auto summoner_layout_content = add_div(summoner_layout, "Content SummonerLayoutContent");
 
 				auto footer_wrap = add_div(layout_wrap, "FooterWrap");
 				{
-					footer_wrap->add(cgicc::div("2012-2017 OP.GG.   Data based on League of legends Europe West.").set("class", "FooterCopyRight"));
+					footer_wrap->add(cgicc::div("2017 LEAProject.   Data based on League of legends Europe West.").set("class", "FooterCopyRight"));
 				}
 
 				{
 					serverBD->getListChampions(champions);
+					serverBD->getListSpells(spells);
+
+					auto side_content = sideContent(summoner_layout_content, summoner.country, ss);
 
 					auto real_content = realContent(summoner_layout_content, summoner.riotSummoner, matchs);
 
-					auto side_content = sideContent(summoner_layout_content, ss);
 				}
 			}
 

@@ -108,6 +108,16 @@ namespace LEA_Project
 					std::cout << "# ERR: " << e.what();
 				}
 			}
+			//
+			for(auto& participant : match.participantIdentities)
+			{
+				auto name = participant.player.summonerName;
+				LEA_Project::Summoner summoner;
+				if (!serverBD->getFromDBSummonerByName(name, summoner))
+					participant.player.country = "nan";
+				else
+					participant.player.country = summoner.country;
+			}
 			matchs.push_back(match);
 		}
 
@@ -144,42 +154,9 @@ namespace LEA_Project
 		// GetSummoner
 		auto summoner = getSummonerSummoners(name);
 		std::map<int, ChampionStats> champions_stats;
-		auto result = serverBD->getFromDBChampionStats(summoner.riotSummoner.accountId, champions_stats);
-		if (!result)
+		while (!serverBD->getFromDBChampionStats(summoner.riotSummoner.accountId, champions_stats))
 		{
-			system("pause");
-			STARTUPINFO si;
-			PROCESS_INFORMATION pi;
-
-			ZeroMemory(&si, sizeof(si));
-			si.cb = sizeof(si);
-			ZeroMemory(&pi, sizeof(pi));
-
-			// Start the child process. 
-			auto str_command = "C:\\Riot_api\\ChampionsLoadStats.exe " + name;
-			char command[56 + 1];
-			strcpy_s(command, str_command.c_str());
-			auto process_information = CreateProcess(NULL,   // No module name (use command line)
-				TEXT(command),        // Command line
-				NULL,           // Process handle not inheritable
-				NULL,           // Thread handle not inheritable
-				FALSE,          // Set handle inheritance to FALSE
-				0,              // No creation flags
-				NULL,           // Use parent's environment block
-				NULL,           // Use parent's starting directory 
-				&si,            // Pointer to STARTUPINFO structure
-				&pi)           // Pointer to PROCESS_INFORMATION structure
-				;
-			if (!process_information)
-			{
-				printf("CreateProcess failed (%d).\n", GetLastError());
-			}
-			// Wait until child process exits.
-			//auto r = WaitForSingleObject(pi.hProcess, INFINITE);
-			//printf("Process created id = %d.\n", pi.dwProcessId);
-			// Close process and thread handles. 
-			CloseHandle(pi.hThread);
-			CloseHandle(pi.hProcess);
+			getSummonerChampionsStatsFromRiot(name);
 		}
 		
 		return champions_stats;
@@ -197,41 +174,77 @@ namespace LEA_Project
 		serverBD->getListChampions(champions);
 		
 		// Get Match History References
-		Riot::Matchlist match_history = {};
-		auto nb_game_found = serverBD->getFromDBMatchReference(summoner.riotSummoner.accountId, match_history);
-		auto match_history0 = Riot::getMatchlistsByAccount(summoner.riotSummoner.accountId, nb_game_found, 10000, 420, 9);
-		match_history.matches.merge(match_history0.matches, mycomparison);
+		auto match_history = Riot::getMatchlistsByAccount(summoner.riotSummoner.accountId, 0, -1, 420, 9);;
+		auto total_games = match_history.totalGames;
+		if(total_games > 50)
+		{
+			for (auto begin_index = 50; begin_index < total_games; begin_index+=50)
+				match_history.matches.merge(Riot::getMatchlistsByAccount(summoner.riotSummoner.accountId, begin_index, -1, 420, 9).matches, mycomparison);
+		}	
+		
 
 		// Main loop
+		
+		static auto MAX_RETRY_COUNT = 5;
 		for (auto match_ref : match_history.matches)
 		{
+			auto retryCount = 0;
 			Riot::Match match = {};
 			match.gameCreation = match_ref.timestamp;
-			try
+			while(true)
 			{
-				match = Riot::getMatchbyMatchId(match_ref.gameId);
+				try
+				{
+					match = Riot::getMatchbyMatchId(match_ref.gameId);
+					break;
+				}
+				catch (Riot::URLReader::URLReaderException& e)
+				{
+					if (retryCount > MAX_RETRY_COUNT)
+						std::cout << "# ERR: " << e.what();
+				}
 			}
-			catch (Riot::URLReader::URLReaderException& e)
-			{
-				std::cout << "# ERR: " << e.what();
-			}
+			
 
 			auto position = getPositionInMatch(match, summoner.riotSummoner.id);
 			if (position < 0)
 				continue;
 			auto participant = match.participants[position - 1];
 
-			auto& champion_stats = champions_stats[participant.championId];
-			champion_stats.championId = participant.championId;
-			champion_stats.accountId = summoner.riotSummoner.accountId;
-			champion_stats.cs += match.participants[position - 1].stats.totalMinionsKilled;
-			champion_stats.kills += match.participants[position - 1].stats.kills;
-			champion_stats.deaths += match.participants[position - 1].stats.deaths;
-			champion_stats.assists += match.participants[position - 1].stats.assists;
-			champion_stats.wins += match.participants[position - 1].stats.win ? 1 : 0;
-			champion_stats.losses += match.participants[position - 1].stats.win ? 0 : 1;
+			LEA_Project::ChampionStats new_champion_stats = {};
+			new_champion_stats.championId = participant.championId;
+			new_champion_stats.accountId = summoner.riotSummoner.accountId;
+			new_champion_stats.cs = match.participants[position - 1].stats.totalMinionsKilled;
+			new_champion_stats.kills = match.participants[position - 1].stats.kills;
+			new_champion_stats.deaths = match.participants[position - 1].stats.deaths;
+			new_champion_stats.assists = match.participants[position - 1].stats.assists;
+			new_champion_stats.wins = match.participants[position - 1].stats.win ? 1 : 0;
+			new_champion_stats.losses = match.participants[position - 1].stats.win ? 0 : 1;
+			new_champion_stats.firstTimestamp = match.gameCreation;
+			new_champion_stats.lastTimestamp = match.gameCreation;
+			
+			if(champions_stats.find(participant.championId) != champions_stats.end())
+			{
+				auto& champion_stats = champions_stats[participant.championId];
+				champion_stats.cs +=	new_champion_stats.cs	;
+				champion_stats.kills += new_champion_stats.kills	;
+				champion_stats.deaths += new_champion_stats.deaths	;
+				champion_stats.assists += new_champion_stats.assists    ;
+				champion_stats.wins +=	new_champion_stats.wins   ;
+				champion_stats.losses += new_champion_stats.losses	;
+				if (new_champion_stats.firstTimestamp < champion_stats.firstTimestamp)
+					champion_stats.firstTimestamp = new_champion_stats.firstTimestamp;
+				if (new_champion_stats.lastTimestamp > champion_stats.lastTimestamp)
+					champion_stats.lastTimestamp = new_champion_stats.lastTimestamp;
+			}
+			else
+			{
+				champions_stats[participant.championId] = new_champion_stats;
+			}
+
+			serverBD->setInDBChampionStats(summoner.riotSummoner.accountId, new_champion_stats);
 		}
-		serverBD->setInDBChampionStats(summoner.riotSummoner.accountId, champions_stats);
+		
 
 		return champions_stats;
 	}
