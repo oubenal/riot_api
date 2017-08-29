@@ -1,4 +1,4 @@
-#include "..\include\riot_api\ServerBD.h"
+#include <riot_api/ServerBD.h>
 
 
 
@@ -26,7 +26,7 @@ ServerBD::~ServerBD()
 	//  Connector/C++ takes care of freeing driver
 }
 
-int ServerBD::getFromDBSummonerByName(const std::string& name, Riot::Summoner& summoner) const
+int ServerBD::getFromDBSummonerByName(const std::string& name, LEA_Project::Summoner& summoner) const
 {
 	// Query DB
 	auto statement = con->createStatement();
@@ -36,12 +36,13 @@ int ServerBD::getFromDBSummonerByName(const std::string& name, Riot::Summoner& s
 		auto result_set = statement->executeQuery(query_base.c_str());
 		if (result_set->next())
 		{
-			Helper::assignValue(summoner.id, result_set, "id");
-			Helper::assignValue(summoner.accountId, result_set, "accountId");
-			Helper::assignValue(summoner.name, result_set, "name");
-			Helper::assignValue(summoner.revisionDate, result_set, "revisionDate");
-			Helper::assignValue(summoner.summonerLevel, result_set, "summonerLevel");
-			Helper::assignValue(summoner.profileIconId, result_set, "profileIconId");
+			Helper::assignValue(summoner.riotSummoner.id, result_set, "id");
+			Helper::assignValue(summoner.riotSummoner.accountId, result_set, "accountId");
+			Helper::assignValue(summoner.riotSummoner.name, result_set, "name");
+			Helper::assignValue(summoner.riotSummoner.revisionDate, result_set, "revisionDate");
+			Helper::assignValue(summoner.riotSummoner.summonerLevel, result_set, "summonerLevel");
+			Helper::assignValue(summoner.riotSummoner.profileIconId, result_set, "profileIconId");
+			Helper::assignValue(summoner.lastUpdate, result_set, "lastUpdate");
 			delete result_set;
 			delete statement;
 			return 1;
@@ -57,18 +58,19 @@ int ServerBD::getFromDBSummonerByName(const std::string& name, Riot::Summoner& s
 	}
 }
 
-void ServerBD::setInDBSummoner(const Riot::Summoner& summoner) const
+void ServerBD::setInDBSummoner(const LEA_Project::Summoner& summoner) const
 {
-	std::string query_base = "INSERT INTO riot_api.summoner(profileIconId, name, summonerLevel, revisionDate, id, accountId) VALUES(?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE profileIconId = VALUES(profileIconId), name = VALUES(name), summonerLevel = VALUES(summonerLevel), revisionDate = VALUES(revisionDate);";
+	std::string query_base = "INSERT INTO riot_api.summoner(profileIconId, name, summonerLevel, revisionDate, id, accountId, lastUpdate) VALUES(?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE profileIconId = VALUES(profileIconId), name = VALUES(name), summonerLevel = VALUES(summonerLevel), revisionDate = VALUES(revisionDate), lastUpdate = VALUES(lastUpdate);";
 	auto prep_stmt = std::unique_ptr<sql::PreparedStatement>(con->prepareStatement(query_base));
 	//query_base += to_string(summoner.profileIconId) + "', '" + summoner.name + "', '" + to_string(summoner.summonerLevel) + "', '" + to_string(summoner.revisionDate) + "', '" + to_string(summoner.id) + "', '" + to_string(summoner.accountId) + "');";
 
-	Helper::setStatment(*prep_stmt, 1, summoner.profileIconId);
-	Helper::setStatment(*prep_stmt, 2, summoner.name);
-	Helper::setStatment(*prep_stmt, 3, summoner.summonerLevel);
-	Helper::setStatment(*prep_stmt, 4, summoner.revisionDate);
-	Helper::setStatment(*prep_stmt, 5, summoner.id);
-	Helper::setStatment(*prep_stmt, 6, summoner.accountId);
+	Helper::setStatment(*prep_stmt, 1, summoner.riotSummoner.profileIconId);
+	Helper::setStatment(*prep_stmt, 2, summoner.riotSummoner.name);
+	Helper::setStatment(*prep_stmt, 3, summoner.riotSummoner.summonerLevel);
+	Helper::setStatment(*prep_stmt, 4, summoner.riotSummoner.revisionDate);
+	Helper::setStatment(*prep_stmt, 5, summoner.riotSummoner.id);
+	Helper::setStatment(*prep_stmt, 6, summoner.riotSummoner.accountId);
+	Helper::setStatment(*prep_stmt, 7, summoner.lastUpdate);
 
 	try
 	{

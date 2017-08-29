@@ -35,12 +35,8 @@ namespace Riot
 				long http_code = 0;
 				curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 				if (http_code != 200 || curl_code == CURLE_ABORTED_BY_CALLBACK)
-				{
-					//Failed
-					throw URLReaderException(http_code);
-				}
 				
-				curl_easy_cleanup(curl);
+					curl_easy_cleanup(curl);
 			}
 			return readBuffer;
 		}

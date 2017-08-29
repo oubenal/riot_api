@@ -78,10 +78,9 @@ public:
 		return &serverBD;
 	}
 
-	int getFromDBSummonerByName(const std::string& name, Riot::Summoner& summoner) const;
+	int getFromDBSummonerByName(const std::string& name, LEA_Project::Summoner& summoner) const;
 
-	void setInDBSummoner(const Riot::Summoner& summoner) const;
-
+	void setInDBSummoner(const LEA_Project::Summoner& summoner) const;
 
 	int getFromDBLeaguesBySummonerId(int64_t id, std::list<Riot::LeaguePosition>& league_positions) const;
 

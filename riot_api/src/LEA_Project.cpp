@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <ctime>
 
 namespace LEA_Project
 {
@@ -24,14 +25,15 @@ namespace LEA_Project
 		return -1;
 	}
 
-	Riot::Summoner getSummonerSummoners(const std::string& name)
+	Summoner getSummonerSummoners(const std::string& name)
 	{
 		auto serverBD = ServerBD::getInstance();
 		// GetSummoner
-		Riot::Summoner summoner = {};
+		Summoner summoner = {};
 		if (!serverBD->getFromDBSummonerByName(name, summoner))
 		{
-			summoner = Riot::getSummonerSummonersByName(name);
+			summoner.riotSummoner = Riot::getSummonerSummonersByName(name);
+			summoner.lastUpdate = time(nullptr) * 1000;
 			// insert into DB
 			serverBD->setInDBSummoner(summoner);
 		}
@@ -39,14 +41,14 @@ namespace LEA_Project
 		return summoner;
 	}
 
-	std::list<Riot::LeaguePosition> getLeaguePositions(const Riot::Summoner& summoner)
+	std::list<Riot::LeaguePosition> getLeaguePositions(const LEA_Project::Summoner& summoner)
 	{
 		auto serverBD = ServerBD::getInstance();
 		// GetLeaguePosition
 		std::list<Riot::LeaguePosition> league_positions;
-		if (!serverBD->getFromDBLeaguesBySummonerId(summoner.id, league_positions))
+		if (!serverBD->getFromDBLeaguesBySummonerId(summoner.riotSummoner.id, league_positions))
 		{
-			league_positions = Riot::getLeaguePositionsBySummoner(summoner.id);
+			league_positions = Riot::getLeaguePositionsBySummoner(summoner.riotSummoner.id);
 			// insert into DB
 			serverBD->setInDBLeagues(league_positions);
 		}
@@ -54,16 +56,16 @@ namespace LEA_Project
 		return league_positions;
 	}
 
-	Riot::Matchlist getMatchHistory(const Riot::Summoner& summoner)
+	Riot::Matchlist getMatchHistory(const LEA_Project::Summoner& summoner)
 	{
 		auto serverBD = ServerBD::getInstance();
 
 		Riot::Matchlist match_history = {};
-		if (!serverBD->getFromDBMatchReference(summoner.accountId, match_history))
+		if (!serverBD->getFromDBMatchReference(summoner.riotSummoner.accountId, match_history))
 		{
-			match_history = Riot::getMatchlistsByAccountRecent(summoner.accountId, 5);
+			match_history = Riot::getMatchlistsByAccountRecent(summoner.riotSummoner.accountId, 5);
 			// insert into DB
-			serverBD->setInDBMatchReference(summoner.accountId, match_history);
+			serverBD->setInDBMatchReference(summoner.riotSummoner.accountId, match_history);
 		}
 
 		return match_history;
@@ -142,7 +144,7 @@ namespace LEA_Project
 		// GetSummoner
 		auto summoner = getSummonerSummoners(name);
 		std::map<int, ChampionStats> champions_stats;
-		auto result = serverBD->getFromDBChampionStats(summoner.accountId, champions_stats);
+		auto result = serverBD->getFromDBChampionStats(summoner.riotSummoner.accountId, champions_stats);
 		if (!result)
 		{
 			system("pause");
@@ -174,7 +176,7 @@ namespace LEA_Project
 			}
 			// Wait until child process exits.
 			//auto r = WaitForSingleObject(pi.hProcess, INFINITE);
-			printf("Process created id = %d.\n", pi.dwProcessId);
+			//printf("Process created id = %d.\n", pi.dwProcessId);
 			// Close process and thread handles. 
 			CloseHandle(pi.hThread);
 			CloseHandle(pi.hProcess);
@@ -196,8 +198,8 @@ namespace LEA_Project
 		
 		// Get Match History References
 		Riot::Matchlist match_history = {};
-		auto nb_game_found = serverBD->getFromDBMatchReference(summoner.accountId, match_history);
-		auto match_history0 = Riot::getMatchlistsByAccount(summoner.accountId, nb_game_found, 10000, 420, 9);
+		auto nb_game_found = serverBD->getFromDBMatchReference(summoner.riotSummoner.accountId, match_history);
+		auto match_history0 = Riot::getMatchlistsByAccount(summoner.riotSummoner.accountId, nb_game_found, 10000, 420, 9);
 		match_history.matches.merge(match_history0.matches, mycomparison);
 
 		// Main loop
@@ -214,14 +216,14 @@ namespace LEA_Project
 				std::cout << "# ERR: " << e.what();
 			}
 
-			auto position = getPositionInMatch(match, summoner.id);
+			auto position = getPositionInMatch(match, summoner.riotSummoner.id);
 			if (position < 0)
 				continue;
 			auto participant = match.participants[position - 1];
 
 			auto& champion_stats = champions_stats[participant.championId];
 			champion_stats.championId = participant.championId;
-			champion_stats.accountId = summoner.accountId;
+			champion_stats.accountId = summoner.riotSummoner.accountId;
 			champion_stats.cs += match.participants[position - 1].stats.totalMinionsKilled;
 			champion_stats.kills += match.participants[position - 1].stats.kills;
 			champion_stats.deaths += match.participants[position - 1].stats.deaths;
@@ -229,7 +231,7 @@ namespace LEA_Project
 			champion_stats.wins += match.participants[position - 1].stats.win ? 1 : 0;
 			champion_stats.losses += match.participants[position - 1].stats.win ? 0 : 1;
 		}
-		serverBD->setInDBChampionStats(summoner.accountId, champions_stats);
+		serverBD->setInDBChampionStats(summoner.riotSummoner.accountId, champions_stats);
 
 		return champions_stats;
 	}

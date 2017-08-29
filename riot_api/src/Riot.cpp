@@ -43,7 +43,7 @@ namespace Riot
 		return result;
 	}
 
-	std::string api_key = "RGAPI-8a620b99-4faf-41ad-b9aa-d3a2b23094a0";
+	std::string api_key = "RGAPI-c9e33465-790b-4c8d-931e-23aeb62b8ab8";
 	std::string base_url = "https://euw1.api.riotgames.com/lol/";
 
 	// ---------- API Resource: SUMMONER-V3 ---------- //
@@ -61,14 +61,8 @@ namespace Riot
 		rapidjson::Document json;
 		json.Parse<0>(URLReader::read(url).c_str());
 		Summoner summoner = {};
-		try
-		{
-			summoner = parseSummonerSummoners(json);
-		}
-		catch (Riot::URLReader::URLReaderException& e)
-		{
-			std::cout << e.what() << '\n';
-		}
+		summoner = parseSummonerSummoners(json);
+
 		return summoner;
 	}
 

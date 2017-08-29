@@ -30,6 +30,7 @@ using namespace std;
 #include <cgicc/HTMLClasses.h>
 #include <cgicc/HTMLElementList.h>
 #include <cgicc/HTMLElement.h>
+#include <cgicc/HTTPRedirectHeader.h>
 
 
 using namespace std;
@@ -58,9 +59,8 @@ int cgicc_render()
 		}
 		else if (strItr->isEmpty())
 		{
-			errMsg.str("");
-			errMsg << "No summoner's name was written " << "str" << " was empty";
-			Err(errMsg.str());
+			auto redirect = HTTPRedirectHeader("http://localhost/LEAProject/index.html");
+			redirect.render(cout);
 		}
 		else
 			name = strItr->getValue();
@@ -84,6 +84,19 @@ int cgicc_render()
 			string form = whichFormItr->getValue();
 			if (form == "Search")
 			{
+				system("pause");
+				auto summoner = LEA_Project::getSummonerSummoners(name);
+				if (summoner.riotSummoner.name.empty())
+				{
+					auto redirect = HTTPRedirectHeader("http://localhost/LEAProject/not_found.html");
+					redirect.render(cout);
+					return EXIT_SUCCESS;
+				}
+				auto pair = LEA_Project::getSummonerHistory(name);
+				auto matchs = pair.first;
+				auto league = pair.second;
+				auto ss = LEA_Project::getSummonerChampionsStats(name);
+
 				// Output the HTTP headers for an HTML document,
 				// and the HTML 4.0 DTD info
 				cout << HTTPHTMLHeader() << HTMLDoctype(HTMLDoctype::eStrict) << endl;
@@ -93,13 +106,6 @@ int cgicc_render()
 				cout << head() << link().set("rel", "stylesheet").set("href", "http://localhost/LEAProject/styles.css") << endl << head() << endl;
 				// Start the HTML body
 				cout << body() << endl;
-
-				auto summoner = LEA_Project::getSummonerSummoners(name);
-				auto pair = LEA_Project::getSummonerHistory(name);
-				auto matchs = pair.first;
-				auto league = pair.second;
-				auto ss = LEA_Project::getSummonerChampionsStats(name);
-
 				HtmlRender::layoutWrapRender(cout, summoner, ss, matchs, league);
 			}
 
@@ -181,13 +187,13 @@ void Err(const string s)
 	cout << html().set("lang", "EN").set("dir", "LTR") << endl;
 
 	// Set up the page's header and title.
-	cout << head(title("Mark B. Motl - CS 4312 - Mixed Content Types"))
+	cout << head(title("LEAProject ERROR"))
 		<< endl;
 
 	// Start the HTML body
 	cout << body().set("BGCOLOR", "#FFFFFF") << endl;
 
-	cout << h1("Mixed Content Types Error") << endl
+	cout << h1("Error : ") << endl
 		<< "Your form results could not be processed because "
 		<< s << "." << endl;
 	WriteAddress();

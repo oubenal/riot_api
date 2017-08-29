@@ -331,7 +331,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner01, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner01, "ChampionImage");
 											{
@@ -346,7 +346,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner02, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner02, "ChampionImage");
 											{
@@ -362,7 +362,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner03, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner03, "ChampionImage");
 											{
@@ -378,7 +378,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner04, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner04, "ChampionImage");
 											{
@@ -394,7 +394,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner05, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner05, "ChampionImage");
 											{
@@ -413,7 +413,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner06, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner06, "ChampionImage");
 											{
@@ -429,7 +429,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner07, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner07, "ChampionImage");
 											{
@@ -445,7 +445,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner08, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner08, "ChampionImage");
 											{
@@ -461,7 +461,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner09, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner09, "ChampionImage");
 											{
@@ -477,7 +477,7 @@ namespace HtmlRender
 											// TODO : use country tag
 											auto country_image = add_div(summoner10, "CountryImage");
 											{
-												country_image->add(img(HTMLAttribute("src", "img/ma.png")));
+												country_image->add(img(HTMLAttribute("src", "http://localhost/LEAProject/ma.png")));
 											}
 											auto champion_image = add_div(summoner10, "ChampionImage");
 											{
@@ -509,7 +509,7 @@ namespace HtmlRender
 		return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
 	}
 
-	void layoutWrapRender(std::ostream& out, const Riot::Summoner &summoner, const std::map<int, LEA_Project::ChampionStats> ss, const std::vector<Riot::Match> &matchs, const Riot::LeaguePosition &league)
+	void layoutWrapRender(std::ostream& out, const LEA_Project::Summoner &summoner, const std::map<int, LEA_Project::ChampionStats> ss, const std::vector<Riot::Match> &matchs, const Riot::LeaguePosition &league)
 	{
 		auto serverBD = ServerBD::getInstance();
 
@@ -543,7 +543,7 @@ namespace HtmlRender
 					auto profile = add_div(header, "Profile");
 					{
 						int64_t time_now = time(nullptr) * 1000;
-						auto diff = time_now - matchs.front().gameCreation;
+						auto diff = time_now - summoner.lastUpdate;
 						auto days = static_cast<int>(diff / (1000 * 60 * 60 * 24));
 						auto hours = static_cast<int>(diff / (1000 * 60 * 60));
 						auto minutes = static_cast<int>(diff / (1000 * 60));
@@ -564,7 +564,7 @@ namespace HtmlRender
 						}
 					}
 					{
-						profile->add(cgicc::div(".").set("class", "Information").add(span(summoner.name).set("class", "Name")));
+						profile->add(cgicc::div(".").set("class", "Information").add(span(summoner.riotSummoner.name).set("class", "Name")));
 						//auto buttons = add_div(profile, "Buttons");
 						profile->add(cgicc::div().set("class", "Buttons").add(button("Update").set("class", "Button SemiRound Blue").set("onclick", ";").set("style", "position: relative;")));
 					}
@@ -626,7 +626,7 @@ namespace HtmlRender
 				{
 					serverBD->getListChampions(champions);
 
-					auto real_content = realContent(summoner_layout_content, summoner, matchs);
+					auto real_content = realContent(summoner_layout_content, summoner.riotSummoner, matchs);
 
 					auto side_content = sideContent(summoner_layout_content, ss);
 				}
