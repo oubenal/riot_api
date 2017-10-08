@@ -7,11 +7,6 @@
 #include <cppconn/prepared_statement.h>
 #include "LEA_Project.h"
 
-#define _HOST "localhost"
-#define _USER "root"
-#define _PASS "r4yzAnm5"
-#define _DB "riot_api"
-
 namespace Helper
 {
 
@@ -111,6 +106,12 @@ public:
 	int getChampionStatsRankByAllFromDB(int64_t accountId, int championId) const;
 
 	int getChampionStatsRankByCountryFromDB(int64_t accountId, std::string country, int championId) const;
+	
+	void queueSummoner(const std::string& name) const;
+
+	int popSummoner(LEA_Project::QueueEl& summoner) const;
+
+	int getRankByCountry(LEA_Project::Summoner& summoner) const;
 
 private:
 	ServerBD();// default constructor available only to members or friends of this class

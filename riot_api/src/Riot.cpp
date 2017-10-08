@@ -3,13 +3,13 @@
 #include <rapidjson/document.h>
 #include "rapidjson/encodedstream.h"    // EncodedInputStream
 
-
 #include "riot_api/RiotParser.h"
-#include <iostream>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <string>
 #include <sstream>
+
+#include "riot_api/DataParam.h"
 
 namespace Riot
 {
@@ -43,9 +43,6 @@ namespace Riot
 		return result;
 	}
 
-	std::string api_key = "RGAPI-c20acefb-f668-4849-b8a2-a3edd072759f";
-	std::string base_url = "https://euw1.api.riotgames.com/lol/";
-
 	// ---------- API Resource: SUMMONER-V3 ---------- //
 	Summoner getSummonerSummonersByName(const std::string &name)
 	{
@@ -60,10 +57,22 @@ namespace Riot
 		// JSON parse
 		rapidjson::Document json;
 		json.Parse<0>(URLReader::read(url).c_str());
-		Summoner summoner = {};
-		summoner = parseSummonerSummoners(json);
-		//summoner.name = name;
-		return summoner;
+		return parseSummonerSummoners(json);
+	}
+
+	Summoner getSummonerSummonersById(int64_t& id)
+	{
+		auto url =
+			base_url +
+			"summoner/v3/summoners/" +
+			std::to_string(id) +
+			"?api_key=" +
+			api_key;
+
+		// JSON parse
+		rapidjson::Document json;
+		json.Parse<0>(URLReader::read(url).c_str());
+		return parseSummonerSummoners(json);
 	}
 
 	// ---------- API Resource: LEAGUE-V3 ---------- //
@@ -92,6 +101,25 @@ namespace Riot
 	{
 		///lol/match/v3/matchlists/by-account/{accountId}
 		auto token = end_index == -1 ? "" : ("&endIndex=" + std::to_string(end_index));
+		auto url =
+			base_url +
+			"match/v3/matchlists/by-account/" +
+			std::to_string(account_id) +
+			"?queue=" + std::to_string(queue) + token + "&season=" + std::to_string(season) + "&beginIndex=" + std::to_string(begin_index) + "&api_key=" +
+			api_key;
+
+		//JSON parse
+		rapidjson::Document json;
+		json.Parse<0>(URLReader::read(url).c_str());
+
+		return Riot::parseMatchlist(json);
+	}
+
+	Matchlist getMatchlistsByAccount(int64_t account_id, int begin_index, int end_index, int queue, int season, int64_t begin_time, int64_t end_time)
+	{
+		///lol/match/v3/matchlists/by-account/{accountId}
+		auto token = end_index == -1 ? "" : ("&endIndex=" + std::to_string(end_index));
+		token += begin_time < end_time ? ("&beginTime=" + std::to_string(begin_time)) + ("&endTime=" + std::to_string(end_time)) : "";
 		auto url =
 			base_url +
 			"match/v3/matchlists/by-account/" +

@@ -9,11 +9,19 @@
 namespace LEA_Project
 {
 
+	struct QueueEl
+	{
+		int64_t summonerId;
+		std::string name, country;
+	};
+
 	struct Summoner
 	{
 		Riot::Summoner riotSummoner;
 		int64_t lastUpdate;
 		std::string country;
+		int rank_country;
+		int rank_all;
 	};
 
 	struct ChampionStats
@@ -26,21 +34,23 @@ namespace LEA_Project
 		int rank_by_country, rank_by_all;
 	};
 
+	struct LEAData
+	{
+		Summoner summoner;
+		std::vector<Riot::Match> matchs;
+		Riot::LeaguePosition league;
+		std::map<int, ChampionStats> champions_stats;
+	};
+
 	int getPositionInMatch(Riot::Match& match, int64_t summoner_id);
 
-	Summoner getSummonerSummoners(const std::string& name);
+	int updateSummonerhistory(const std::string &name);
 
-	std::list<Riot::LeaguePosition> getLeaguePositions(const LEA_Project::Summoner& summoner);
+	int fetchSummonerData(const std::string& name, LEAData& data);
 
-	Riot::Matchlist getMatchHistory(const LEA_Project::Summoner& summoner);
+	int queueSummoner(const std::string& name);
 
-	std::vector<Riot::Match> getMatchList(const Riot::Matchlist& match_history);
-
-	std::pair<std::vector<Riot::Match>, Riot::LeaguePosition> getSummonerHistory(const std::string &name);
-
-	std::map<int, ChampionStats> getSummonerChampionsStats(const std::string &name);
-
-	std::map<int, ChampionStats> getSummonerChampionsStatsFromRiot(const std::string &name);
+	int insertSummoners();
 }
 
 #endif //  LEA_HPP

@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\DataParam.cpp" />
     <ClCompile Include="src\HtmlRender.cpp" />
     <ClCompile Include="src\LEA_Project.cpp" />
     <ClCompile Include="src\Riot.cpp" />
@@ -28,6 +29,7 @@
     <ClCompile Include="src\URLReader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\riot_api\DataParam.h" />
     <ClInclude Include="include\riot_api\HtmlRender.h" />
     <ClInclude Include="include\riot_api\LEA_Project.h" />
     <ClInclude Include="include\riot_api\Riot.h" />

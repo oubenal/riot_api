@@ -7,16 +7,10 @@
 
 namespace Riot
 {
-	/* By default, functions will use these fields
-	unless otherwise specified. */
-	extern std::string api_key; // ""
-	//extern Region region;       // Region::NA
-	//extern Locale locale;       // Locale::en_US
-	extern std::string base_url;
-
 	// ---------- API Resource: SUMMONER-V3 ---------- //
 	Summoner getSummonerSummonersByName(const std::string &name);
 
+	Summoner getSummonerSummonersById(int64_t &id);
 	// ---------- API Resource: LEAGUE-V3 ---------- //
 	std::list<LeaguePosition> getLeaguePositionsBySummoner(int64_t summonerId);
 
@@ -24,6 +18,8 @@ namespace Riot
 	Matchlist getMatchlistsByAccountRecent(int64_t account_id, int nb_game);
 
 	Matchlist getMatchlistsByAccount(int64_t account_id, int begin_index, int end_index, int queue, int season);
+
+	Matchlist getMatchlistsByAccount(int64_t account_id, int begin_index, int end_index, int queue, int season, int64_t begin_time, int64_t end_time);
 
 	Match getMatchbyMatchId(int64_t game_id);
 }

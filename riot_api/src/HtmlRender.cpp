@@ -12,6 +12,9 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "riot_api/serverBD.h"
 
+#include <cgicc/HTTPRedirectHeader.h>
+#include <cgicc/HTTPHTMLHeader.h>
+
 namespace HtmlRender
 {
 	using namespace cgicc;
@@ -54,19 +57,25 @@ namespace HtmlRender
 		auto side_content = add_div(summoner_layout, "SideContent");
 		{
 			auto _index_stats = 0;
-			for(auto stat_champ : stats_summoner)
+			while (!stats_summoner.empty())
 			{
-				if(++_index_stats > 3)
+				if (++_index_stats > 3)
 					break;
-
+				auto it = stats_summoner.begin();
+				auto stat_champ = *it;
+				stats_summoner.erase(it);
+			
 				auto box = add_div(side_content, "Box");
 				{
+					{
+						box->add(cgicc::div(".").set("class", "ChampionBG").set("style", "background: url(https://ddragon.leagueoflegends.com/cdn/img/champion/splash/" + champions[stat_champ.championId].key + "_0.jpg) no-repeat;background-size: 100%;"));
+					}
 					auto most_champion_content = add_div(box, "MostChampionContent");
 					{
 						auto champion_box = add_div(most_champion_content, "ChampionBox Ranked");
 						{
 							//add title
-							champion_box->add(cgicc::div().set("class", "Face").set("title", champions[stat_champ.championId].name).add(cgicc::div(".").set("class", "borderImage").set("style", "position: absolute;	left: -22px; top: -33px; width: 120px; height: 120px; background: url(./stats_0"+ std::to_string(_index_stats) +".png) no-repeat center bottom")).add(a().add(img().set("class", "ChampionImage").set("src", "//opgg-static.akamaized.net/images/lol/champion/" + champions[stat_champ.championId].key + ".png?image=c_scale,w_45&amp;v=1"))));
+							champion_box->add(cgicc::div().set("class", "Face").set("title", champions[stat_champ.championId].name).add(cgicc::div(".").set("class", "borderImage").set("style", "position: absolute;	left: -22px; top: -33px; width: 120px; height: 120px; background: url(http://localhost/LEAProject/stats_0"+ std::to_string(_index_stats) +".png) no-repeat center bottom")).add(a().add(img().set("class", "ChampionImage").set("src", "//opgg-static.akamaized.net/images/lol/champion/" + champions[stat_champ.championId].key + ".png?image=c_scale,w_45&amp;v=1"))));
 							auto champion_info = add_div(champion_box, "ChampionInfo");
 							{
 								champion_info->add(cgicc::div().set("class", "ChampionName").set("title", champions[stat_champ.championId].name).add(a(champions[stat_champ.championId].name)));
@@ -150,6 +159,110 @@ namespace HtmlRender
 			
 		}
 
+		{
+			auto _index_stats = 0;
+			auto side_content_plus = add_div(summoner_layout, "SideContent");
+			while (!stats_summoner.empty())
+			{
+				auto it = stats_summoner.begin();
+				auto stat_champ = *it;
+				stats_summoner.erase(it);
+
+				if (++_index_stats > 3)
+				{
+					_index_stats = 1;
+					side_content_plus = add_div(summoner_layout, "SideContent");
+				}
+				auto box = add_div(side_content_plus, "Box");
+				{
+					auto most_champion_content = add_div(box, "MostChampionContent");
+					{
+						auto champion_box = add_div(most_champion_content, "ChampionBox Ranked");
+						{
+							//add title
+							champion_box->add(cgicc::div().set("class", "Face").set("title", champions[stat_champ.championId].name).add(a().add(img().set("class", "ChampionImage").set("src", "//opgg-static.akamaized.net/images/lol/champion/" + champions[stat_champ.championId].key + ".png?image=c_scale,w_45&amp;v=1"))));
+							auto champion_info = add_div(champion_box, "ChampionInfo");
+							{
+								champion_info->add(cgicc::div().set("class", "ChampionName").set("title", champions[stat_champ.championId].name).add(a(champions[stat_champ.championId].name)));
+								float ratio = stat_champ.cs / (stat_champ.wins + stat_champ.losses);
+								std::stringstream stream;
+								auto r1 = static_cast<int>(floor(ratio*100.)) % 100 == 0;
+								auto r2 = static_cast<int>(floor(ratio*10.)) % 10 == 0;
+								if (r1)
+								{
+									if (r2)
+										stream << std::fixed << std::setprecision(0) << ratio;
+									else
+										stream << std::fixed << std::setprecision(1) << ratio;
+								}
+								else
+									stream << std::fixed << std::setprecision(2) << ratio;
+								champion_info->add(cgicc::div().set("class", "ChampionMinionKill").add(span(stream.str() + " CS").set("class", "cs average")));
+							}
+							auto personal_kda = add_div(champion_box, "PersonalKDA");
+							{
+								float ratio = stat_champ.kills + stat_champ.assists;
+								if (stat_champ.deaths) ratio /= stat_champ.deaths;
+								std::stringstream stream;
+								auto r1 = static_cast<int>(floor(ratio*100.)) % 100 == 0;
+								auto r2 = static_cast<int>(floor(ratio*10.)) % 10 == 0;
+								if (r1)
+								{
+									if (r2)
+										stream << std::fixed << std::setprecision(0) << ratio;
+									else
+										stream << std::fixed << std::setprecision(1) << ratio;
+								}
+								else
+									stream << std::fixed << std::setprecision(2) << ratio;
+								std::string kda_type;
+								if (ratio < 3.)
+									kda_type = "KDA normal tip";
+								else if (ratio < 4.)
+									kda_type = "KDA green tip";
+								else if (ratio < 5.)
+									kda_type = "KDA blue tip";
+								else
+									kda_type = "KDA orange tip";
+								personal_kda->add(cgicc::div().set("class", kda_type).add(span(stream.str() + ":1").set("class", "KDA")).add(span("KDA").set("class", "Text")));
+
+								auto kda_each = add_div(personal_kda, "KDAEach");
+								{
+									float nb_g = stat_champ.wins + stat_champ.losses;
+									float ratio_k = stat_champ.kills / nb_g;
+									float ratio_a = stat_champ.assists / nb_g;
+									float ratio_d = stat_champ.deaths / nb_g;
+									std::stringstream stream_k, stream_a, stream_d;
+									stream_k << std::fixed << std::setprecision(1) << ratio_k;
+									stream_d << std::fixed << std::setprecision(1) << ratio_d;
+									stream_a << std::fixed << std::setprecision(1) << ratio_a;
+									kda_each->add(span(stream_k.str()).set("class", "Kill"));
+									kda_each->add(span("/").set("class", "Bar"));
+									kda_each->add(span(stream_d.str()).set("class", "Death"));
+									kda_each->add(span("/").set("class", "Bar"));
+									kda_each->add(span(stream_a.str()).set("class", "Assist"));
+								}
+							}
+
+							auto played = add_div(champion_box, "Played");
+							{
+								int ratio = stat_champ.wins * 100 / (stat_champ.wins + stat_champ.losses);
+								std::string winratio_type;
+								if (ratio < 60)
+									winratio_type = "WinRatio normal tip";
+								else
+									winratio_type = "WinRatio red tip";
+								played->add(cgicc::div(std::to_string(ratio) + "%").set("class", winratio_type).set("title", "Win Ratio"));
+								played->add(cgicc::div(std::to_string(stat_champ.wins + stat_champ.losses) + " Played").set("class", "Title"));
+							}
+							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/" + country + ".png"))).add(p("<br>Rank#" + std::to_string(stat_champ.rank_by_country)).set("style", "margin: 0px")));
+							champion_box->add(cgicc::div().set("class", "Rank").set("style", "display: table-cell;width: 70px;vertical-align: middle;").add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block;vertical-align: middle;").add(img().set("src", "http://localhost/LEAProject/icons/world.png"))).add(p("<br>Rank#" + std::to_string(stat_champ.rank_by_all)).set("style", "margin: 0px")));
+						}
+					}
+				}
+			}
+		}
+
 		return side_content;
 	}
 
@@ -167,7 +280,7 @@ namespace HtmlRender
 					{
 						if(++_index_list > 3)
 						{
-							_index_list = 0;
+							_index_list = 1;
 							game_item_list = add_div(_content, "GameItemList");
 						}
 						{
@@ -364,50 +477,7 @@ namespace HtmlRender
 									}
 
 								}
-								/*
-								 auto items = add_div(content, "Items");
-								{
-									auto item01 = add_div(items, "Item");
-									{
-										std::string src = "//opgg-static.akamaized.net/images/lol/item/" + std::to_string(match.participants[position - 1].stats.item0) + ".png?image=c_scale,w_32&amp;v=1";
-										item01->add(img(HTMLAttribute("src", src)));
-									}
-									auto item02 = add_div(items, "Item");
-									{
-										std::string src = "//opgg-static.akamaized.net/images/lol/item/" + std::to_string(match.participants[position - 1].stats.item1) + ".png?image=c_scale,w_32&amp;v=1";
-										item02->add(img(HTMLAttribute("src", src)));
-									}
-									auto item03 = add_div(items, "Item");
-									{
-										std::string src = "//opgg-static.akamaized.net/images/lol/item/" + std::to_string(match.participants[position - 1].stats.item2) + ".png?image=c_scale,w_32&amp;v=1";
-										item03->add(img(HTMLAttribute("src", src)));
-									}
-									auto item04 = add_div(items, "Item");
-									{
-										std::string src = "//opgg-static.akamaized.net/images/lol/item/" + std::to_string(match.participants[position - 1].stats.item3) + ".png?image=c_scale,w_32&amp;v=1";
-										item04->add(img(HTMLAttribute("src", src)));
-									}
-									auto item05 = add_div(items, "Item");
-									{
-										std::string src = "//opgg-static.akamaized.net/images/lol/item/" + std::to_string(match.participants[position - 1].stats.item4) + ".png?image=c_scale,w_32&amp;v=1";
-										item05->add(img(HTMLAttribute("src", src)));
-									}
-									auto item06 = add_div(items, "Item");
-									{
-										std::string src = "//opgg-static.akamaized.net/images/lol/item/" + std::to_string(match.participants[position - 1].stats.item5) + ".png?image=c_scale,w_32&amp;v=1";
-										item06->add(img(HTMLAttribute("src", src)));
-									}
-								}
-								auto trinket_with_item = add_div(content, "TrinketWithItem");
-								{
-									auto item00 = add_div(trinket_with_item, "Item");
-									{
-										std::string src = "//opgg-static.akamaized.net/images/lol/item/" + std::to_string(match.participants[position - 1].stats.item6) + ".png?image=c_scale,w_32&amp;v=1";
-										item00->add(img(HTMLAttribute("src", src)));
-									}
-								}
 								
-								 */
 								auto follow_players_names_02 = add_div(content, "FollowPlayers Names");
 								{
 									auto result = add_div(follow_players_names_02, "Result");
@@ -529,6 +599,9 @@ namespace HtmlRender
 	void layoutWrapRender(std::ostream& out, const LEA_Project::Summoner &summoner, const std::map<int, LEA_Project::ChampionStats> ss, const std::vector<Riot::Match> &matchs, const Riot::LeaguePosition &league)
 	{
 		auto serverBD = ServerBD::getInstance();
+		serverBD->getListChampions(champions);
+		serverBD->getListSpells(spells);
+
 
 		cgicc::div* layout_wrap = new cgicc::div(HTMLAttribute("class", "LayoutWrap"));
 
@@ -541,95 +614,128 @@ namespace HtmlRender
 			{
 				auto header = add_div(summoner_layout, "Header");
 				{
-					auto past_rank = add_div(header, "PastRank");
+					std::set<LEA_Project::ChampionStats, bool(*)(const LEA_Project::ChampionStats&, const LEA_Project::ChampionStats&)> stats_summoner(&mycomparison1);
+					for (auto elem : ss)
 					{
-						auto past_rank_list = new ul(HTMLAttribute("class", "PastRankList"));
-						past_rank->add(past_rank_list);
-						past_rank_list->add(li(HTMLAttribute("class", "Item tip")).add(b("S4 Unranked")));
-						past_rank_list->add(li(HTMLAttribute("class", "Item tip")).add(b("S5 Unranked")));
-						past_rank_list->add(li(HTMLAttribute("class", "Item tip")).add(b("S6 Unranked")));
+						stats_summoner.insert(elem.second);
 					}
-					auto face = add_div(header, "Face");
+					header->set("style", "background: url(https://ddragon.leagueoflegends.com/cdn/img/champion/splash/" + champions[stats_summoner.begin()->championId].key + "_0.jpg) no-repeat;");
+					auto header_box = add_div(header, "HeaderBox");
 					{
-						auto profile_icon = add_div(face, "ProfileIcon");
+						
+						auto face = add_div(header_box, "Face");
 						{
-							profile_icon->add(cgicc::div(".").set("class", "borderImage").set("style", "background-image: url(//opgg-static.akamaized.net/images/borders2/" + boost::to_lower_copy(league.tier) + ".png);"));
-							profile_icon->add(img().set("src", "//opgg-static.akamaized.net/images/profile_icons/profileIcon1666.jpg").set("class", "ProfileImage"));
+							auto profile_icon = add_div(face, "ProfileIcon");
+							{
+								profile_icon->add(cgicc::div(".").set("class", "borderImage").set("style", "background-image: url(//opgg-static.akamaized.net/images/borders2/" + boost::to_lower_copy(league.tier) + ".png);"));
+								profile_icon->add(img().set("src", "//opgg-static.akamaized.net/images/profile_icons/profileIcon" + std::to_string(summoner.riotSummoner.profileIconId) + ".jpg").set("class", "ProfileImage"));
+							}
 						}
-					}
-					auto profile = add_div(header, "Profile");
-					{
-						int64_t time_now = time(nullptr) * 1000;
-						auto diff = time_now - summoner.lastUpdate;
-						auto days = static_cast<int>(diff / (1000 * 60 * 60 * 24));
-						auto hours = static_cast<int>(diff / (1000 * 60 * 60));
-						auto minutes = static_cast<int>(diff / (1000 * 60));
-						auto seconds = static_cast<int>(diff) / 1000;
-						if (days)
-							header->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(days) + " days ago")));
-						else
+						auto profile = add_div(header_box, "Profile");
 						{
-							if (hours)
-								header->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(hours) + " days ago")));
+							int64_t time_now = time(nullptr) * 1000;
+							auto diff = time_now - summoner.lastUpdate;
+							auto days = static_cast<int>(diff / (1000 * 60 * 60 * 24));
+							auto hours = static_cast<int>(diff / (1000 * 60 * 60));
+							auto minutes = static_cast<int>(diff / (1000 * 60));
+							auto seconds = static_cast<int>(diff) / 1000;
+							if (days)
+								header_box->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(days) + " days ago")));
 							else
 							{
-								if (minutes)
-									header->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(minutes) + " days ago")));
+								if (hours)
+									header_box->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(hours) + " days ago")));
 								else
-									header->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(seconds) + " days ago")));
-							}
-						}
-					}
-					{
-						auto rank = add_div(profile, "Rank");
-						{
-							rank->add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block; vertical-align: middle; width: 18px;").add(img().set("src", "http://localhost/LEAProject/icons/"+summoner.country+".png")));
-						}
-						profile->add(cgicc::div(".").set("class", "Information").add(span(summoner.riotSummoner.name).set("class", "Name")));
-						profile->add(cgicc::div().set("class", "Buttons").add(button("Update").set("class", "Button SemiRound Blue").set("onclick", ";").set("style", "position: relative;")));
-					}
-					auto summoner_rating_medium = add_div(header, "SummonerRatingMedium");
-					{
-						auto _id = 0;
-
-						switch (str2int(league.rank.c_str()))
-						{
-						case str2int("I"):
-							_id = 1;
-							break;
-						case str2int("II"):
-							_id = 2;
-							break;
-						case str2int("III"):
-							_id = 3;
-							break;
-						case str2int("IV"):
-							_id = 4;
-							break;
-						case str2int("V"):
-							_id = 5;
-							break;
-						default:
-							break;
-						}
-
-						summoner_rating_medium->add(cgicc::div().set("class", "Medal").add(img().set("class", "Image").set("src", "//opgg-static.akamaized.net/images/medals/" + boost::to_lower_copy(league.tier) + "_" + std::to_string(_id) + ".png")));
-						auto tier_rank_info = add_div(summoner_rating_medium, "TierRankInfo");
-						{
-							tier_rank_info->add(cgicc::div().set("class", "TierRank").add(span(league.tier + " " + league.rank).set("class", "tierRank")));
-							{
-								auto tier_info = add_div(tier_rank_info, "TierInfo");
 								{
-									tier_info->add(span(std::to_string(league.leaguePoints) + " LP").set("class", "LeaguePoints"));
-
-									auto ratio = league.wins * 100 / (league.wins + league.losses);
-									tier_info->add(span().set("class", "WinLose").add(span(" / " + std::to_string(league.wins) + "W").set("class", "wins")).add(span(" " + std::to_string(league.losses) + "L").set("class", "losses")).add(br()).add(span("Win Ration "+ std::to_string(ratio)  + "%").set("class", "winratio")));
+									if (minutes)
+										header_box->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(minutes) + " days ago")));
+									else
+										header_box->add(cgicc::div().set("class", "LastUpdate").add(span("Last updated:" + std::to_string(seconds) + " days ago")));
 								}
-
 							}
-							tier_rank_info->add(cgicc::div(league.leagueName).set("class", "Leaguename"));
+						}
+						{
+							auto rank = add_div(profile, "Rank");
+							{
+								rank->add(cgicc::div().set("class", "CountryImage").set("style", "display: inline-block; vertical-align: middle; width: 18px;").add(img().set("src", "http://localhost/LEAProject/icons/" + summoner.country + ".png")));
+							}
+							profile->add(cgicc::div(".").set("class", "Information").add(span(summoner.riotSummoner.name).set("class", "Name")));
+							profile->add(cgicc::div().set("class", "Buttons").add(button("Update").set("class", "Button SemiRound Blue").set("onclick", ";").set("style", "position: relative;")));
+						}
+						auto summoner_rating_medium = add_div(header_box, "SummonerRatingMedium");
+						{
+							auto _id = 0;
+
+							switch (str2int(league.rank.c_str()))
+							{
+							case str2int("I"):
+								_id = 1;
+								break;
+							case str2int("II"):
+								_id = 2;
+								break;
+							case str2int("III"):
+								_id = 3;
+								break;
+							case str2int("IV"):
+								_id = 4;
+								break;
+							case str2int("V"):
+								_id = 5;
+								break;
+							default:
+								break;
+							}
+
+							summoner_rating_medium->add(cgicc::div().set("class", "Medal").add(img().set("class", "Image").set("src", "//opgg-static.akamaized.net/images/medals/" + boost::to_lower_copy(league.tier) + "_" + std::to_string(_id) + ".png")));
+							auto tier_rank_info = add_div(summoner_rating_medium, "TierRankInfo");
+							{
+								tier_rank_info->add(cgicc::div().set("class", "TierRank").add(span(league.tier + " " + league.rank).set("class", "tierRank")));
+								{
+									auto tier_info = add_div(tier_rank_info, "TierInfo");
+									{
+										tier_info->add(span(std::to_string(league.leaguePoints) + " LP").set("class", "LeaguePoints"));
+
+										auto ratio = league.wins * 100 / (league.wins + league.losses);
+										tier_info->add(span().set("class", "WinLose").add(span(" / " + std::to_string(league.wins) + "W").set("class", "wins")).add(span(" " + std::to_string(league.losses) + "L").set("class", "losses")).add(br()).add(span("Win Ration " + std::to_string(ratio) + "%").set("class", "winratio")));
+									}
+
+								}
+								tier_rank_info->add(cgicc::div(league.leagueName).set("class", "Leaguename"));
+							}
+						}
+
+						auto summoner_rating_country = add_div(header_box, "SummonerRatingCountry");
+						{
+							{
+								auto medal = add_div(summoner_rating_country, "Flag");
+								{
+									medal->add(img().set("class", "Image").set("src", "//localhost/LEAProject/flags/png/" + summoner.country + ".png"));
+								}
+								auto tier_rank_info = add_div(summoner_rating_country, "TierRankInfo");
+								{
+									auto tier_rank = add_div(tier_rank_info, "TierRank");
+									{
+										tier_rank->add(span("Rank #" + std::to_string(summoner.rank_country)).set("class", "LeaguePoints"));
+									}
+								}
+							}
+							{
+								auto medal = add_div(summoner_rating_country, "Flag");
+								{
+									medal->add(img().set("class", "Image").set("src", "//localhost/LEAProject/flags/png/europe.png"));
+								}
+								auto tier_rank_info = add_div(summoner_rating_country, "TierRankInfo");
+								{
+									auto tier_rank = add_div(tier_rank_info, "TierRank");
+									{
+										tier_rank->add(span("Rank #" + std::to_string(summoner.rank_all)).set("class", "LeaguePoints"));
+									}
+								}
+							}
 						}
 					}
+					
 				}
 				
 				auto summoner_layout_content = add_div(summoner_layout, "Content SummonerLayoutContent");
@@ -640,9 +746,7 @@ namespace HtmlRender
 				}
 
 				{
-					serverBD->getListChampions(champions);
-					serverBD->getListSpells(spells);
-
+					
 					auto side_content = sideContent(summoner_layout_content, summoner.country, ss);
 
 					auto real_content = realContent(summoner_layout_content, summoner.riotSummoner, matchs);
@@ -652,13 +756,63 @@ namespace HtmlRender
 
 		}
 		setlocale(LC_ALL, "");
-		//ofstream myfile;
-		//myfile.open("example.json");
-		//myfile << *layout_wrap << endl;
-		//myfile.close();
+		std::ofstream myfile;
+		myfile.open("example.json");
+		myfile << *layout_wrap << std::endl;
+		myfile.close();
 
 		out << *layout_wrap << "\n";
 		delete layout_wrap;
-		out << body() << html() << "\n";
 	}
+
+	void cgicc_render(LEA_Project::Summoner &summoner, Riot::LeaguePosition &league, std::vector<Riot::Match> &matchs, std::map<int, LEA_Project::ChampionStats> &ss)
+	{
+		using namespace cgicc;
+		using namespace std;
+		// Output the HTTP headers for an HTML document,
+		// and the HTML 4.0 DTD info
+		cout << HTTPHTMLHeader() << HTMLDoctype(HTMLDoctype::eStrict) << endl;
+		cout << meta().set("charset", "UTF-16") << endl;
+		cout << html() << endl;
+		// Set up the page's header and title.
+		cout << head() << link().set("rel", "stylesheet").set("href", "http://localhost/LEAProject/styles.css") << endl << head() << endl;
+		// Start the HTML body
+		cout << body() << endl;
+		layoutWrapRender(cout, summoner, ss, matchs, league);
+		cout << body() << html() << "\n";
+	}
+
+	int init_cgi()
+	{
+		using namespace cgicc;
+		using namespace std;
+		// Create a new Cgicc object containing all the CGI data
+		Cgicc cgi;
+		// Get a pointer to the environment
+		auto name_itr = cgi.getElement("userName");
+		if (name_itr == cgi.getElements().end() || name_itr->isEmpty())
+		{
+			auto redirect = HTTPRedirectHeader("http://localhost/LEAProject/index.html");
+			redirect.render(cout);
+			return EXIT_FAILURE;
+		}
+		
+		// Get "userName" value
+		auto name = name_itr->getValue();
+
+		// Fetch Summoner Data
+		LEA_Project::LEAData data;
+		auto status = LEA_Project::fetchSummonerData(name, data);
+		if(status)
+		{
+			auto redirect = HTTPRedirectHeader("http://localhost/LEAProject/not_found.html");
+			redirect.render(cout);
+			//TODO: Queue (/_!_\)
+			return EXIT_SUCCESS;
+		}
+
+		cgicc_render(data.summoner, data.league, data.matchs, data.champions_stats);
+		return EXIT_SUCCESS;
+	}
+
 }

@@ -117,7 +117,7 @@ namespace Riot
 					std::this_thread::sleep_for(std::chrono::seconds(stoi(header_response["Retry-After"])));
 					curl_easy_perform(curl);
 				}
-				if (http_code != 200 || curl_code == CURLE_ABORTED_BY_CALLBACK)
+				if ((http_code != 200 && http_code != 404) || curl_code == CURLE_ABORTED_BY_CALLBACK)
 				{
 					//Failed
 					throw URLReaderException(http_code);

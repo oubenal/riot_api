@@ -1,5 +1,5 @@
 #include <riot_api/ServerBD.h>
-
+#include "riot_api/DataParam.h"
 
 
 ServerBD::ServerBD()
@@ -31,7 +31,6 @@ int ServerBD::getFromDBSummonerByName(const std::string& name, LEA_Project::Summ
 	// Query DB
 	auto statement = con->createStatement();
 	auto query_base = "SELECT * FROM riot_api.summoner as s WHERE s.name = '" + name + "';";
-	auto c = query_base.c_str();
 	try
 	{
 		auto result_set = statement->executeQuery(query_base.c_str());
@@ -62,7 +61,7 @@ int ServerBD::getFromDBSummonerByName(const std::string& name, LEA_Project::Summ
 
 void ServerBD::setInDBSummoner(const LEA_Project::Summoner& summoner) const
 {
-	std::string query_base = "INSERT INTO riot_api.summoner(profileIconId, name, summonerLevel, revisionDate, id, accountId, lastUpdate) VALUES(?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE profileIconId = VALUES(profileIconId), name = VALUES(name), summonerLevel = VALUES(summonerLevel), revisionDate = VALUES(revisionDate), lastUpdate = VALUES(lastUpdate);";
+	std::string query_base = "INSERT INTO riot_api.summoner(profileIconId, name, summonerLevel, revisionDate, id, accountId, lastUpdate, country) VALUES(?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE profileIconId = VALUES(profileIconId), name = VALUES(name), summonerLevel = VALUES(summonerLevel), revisionDate = VALUES(revisionDate), lastUpdate = VALUES(lastUpdate), country= VALUES(country);";
 	auto prep_stmt = std::unique_ptr<sql::PreparedStatement>(con->prepareStatement(query_base));
 	//query_base += to_string(summoner.profileIconId) + "', '" + summoner.name + "', '" + to_string(summoner.summonerLevel) + "', '" + to_string(summoner.revisionDate) + "', '" + to_string(summoner.id) + "', '" + to_string(summoner.accountId) + "');";
 
@@ -73,6 +72,7 @@ void ServerBD::setInDBSummoner(const LEA_Project::Summoner& summoner) const
 	Helper::setStatment(*prep_stmt, 5, summoner.riotSummoner.id);
 	Helper::setStatment(*prep_stmt, 6, summoner.riotSummoner.accountId);
 	Helper::setStatment(*prep_stmt, 7, summoner.lastUpdate);
+	Helper::setStatment(*prep_stmt, 8, summoner.country);
 
 	try
 	{
@@ -613,4 +613,120 @@ void ServerBD::setInDBMatch(const Riot::Match& match) const
 		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 	}
 	
+}
+
+void ServerBD::queueSummoner(const std::string& name) const
+{
+	std::string query_base = "INSERT INTO riot_api.queue(name) VALUES (?)";
+	auto prep_stmt = std::unique_ptr<sql::PreparedStatement>(con->prepareStatement(query_base));
+	Helper::setStatment(*prep_stmt, 1,name);
+
+	try
+	{
+		prep_stmt->executeUpdate();
+	}
+	catch (sql::SQLException& e)
+	{
+		std::cout << "#Method : setInDBMatchList \n";
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+	}
+}
+
+int ServerBD::popSummoner(LEA_Project::QueueEl& summoner) const
+{
+	// Query DB
+	auto statement = con->createStatement();
+	std::string query_base = "SELECT * FROM riot_api.queue LIMIT 1;";
+	try
+	{
+		auto result_set = statement->executeQuery(query_base.c_str());
+		if (result_set->next())
+		{
+			Helper::assignValue(summoner.name, result_set, "name");
+			Helper::assignValue(summoner.summonerId, result_set, "summonerId");
+			Helper::assignValue(summoner.country, result_set, "country");
+			delete result_set;
+			delete statement;
+		}
+		else
+		{
+			delete result_set;
+			delete statement;
+			return 0; // Summoner not found in DB	
+		}
+	}
+	catch (sql::SQLException e)
+	{
+		delete statement;
+		return 0; // Summoner not found in DB
+	}
+
+	query_base = "DELETE FROM riot_api.queue WHERE summonerId = ?;";
+	auto prep_stmt = std::unique_ptr<sql::PreparedStatement>(con->prepareStatement(query_base));
+	Helper::setStatment(*prep_stmt, 1, summoner.summonerId);
+	try
+	{
+		prep_stmt->executeUpdate();
+	}
+	catch (sql::SQLException e)
+	{
+		return 0;
+	}
+	return 1;
+}
+
+int ServerBD::getRankByCountry(LEA_Project::Summoner& summoner) const
+{
+	auto statement = con->createStatement();
+	std::string query_base = "SELECT row_number FROM ( SELECT @curRow := @curRow + 1    AS row_number, FIELD(FII.id, '" + std::to_string(summoner.riotSummoner.id) + "') AS rank FROM ( SELECT s.name, s.id, BAR.score FROM riot_api.summoner AS s INNER JOIN ( SELECT (leaguePoints + rank * 101 + tier * 101 * 5) AS score, id FROM ( SELECT playerOrTeamId AS id, leaguePoints, CASE tier WHEN 'CHALLENGER' THEN 6 WHEN 'MASTER' THEN 5 WHEN 'DIAMOND' THEN 4 WHEN 'PLATINUM' THEN 3 WHEN 'GOLD' THEN 2 WHEN 'SILVER' THEN 1 WHEN 'BRONZE' THEN 0 ELSE 0 END AS 'tier', CASE rank WHEN 'V' THEN 0 WHEN 'IV' THEN 1 WHEN 'III' THEN 2 WHEN 'II' THEN 3 WHEN 'I' THEN 4 ELSE 0 END AS 'rank' FROM riot_api.league WHERE queueType = 'RANKED_SOLO_5x5' ORDER BY tier ) AS FOO ORDER BY score DESC ) AS BAR ON BAR.id = s.id AND s.country = '" + summoner.country + "' ORDER BY score DESC ) AS FII JOIN (SELECT @curRow := 0) r ) AS BIR WHERE BIR.rank = 1;";
+	try
+	{
+		auto result_set = statement->executeQuery(query_base.c_str());
+		if (result_set->next())
+		{
+			Helper::assignValue(summoner.rank_country, result_set, "row_number");
+			delete result_set;
+			delete statement;
+		}
+		else
+		{
+			delete result_set;
+			delete statement;
+			return 0; // Summoner not found in DB	
+		}
+	}
+	catch (sql::SQLException e)
+	{
+		delete statement;
+		return 0; // Summoner not found in DB
+	}
+
+	statement = con->createStatement();
+	query_base = "SELECT row_number FROM ( SELECT @curRow := @curRow + 1    AS row_number, FIELD(FII.id, '" + std::to_string(summoner.riotSummoner.id) + "') AS rank FROM ( SELECT s.name, s.id, BAR.score FROM riot_api.summoner AS s INNER JOIN ( SELECT (leaguePoints + rank * 101 + tier * 101 * 5) AS score, id FROM ( SELECT playerOrTeamId AS id, leaguePoints, CASE tier WHEN 'CHALLENGER' THEN 6 WHEN 'MASTER' THEN 5 WHEN 'DIAMOND' THEN 4 WHEN 'PLATINUM' THEN 3 WHEN 'GOLD' THEN 2 WHEN 'SILVER' THEN 1 WHEN 'BRONZE' THEN 0 ELSE 0 END AS 'tier', CASE rank WHEN 'V' THEN 0 WHEN 'IV' THEN 1 WHEN 'III' THEN 2 WHEN 'II' THEN 3 WHEN 'I' THEN 4 ELSE 0 END AS 'rank' FROM riot_api.league WHERE queueType = 'RANKED_SOLO_5x5' ORDER BY tier ) AS FOO ORDER BY score DESC ) AS BAR ON BAR.id = s.id ORDER BY score DESC ) AS FII JOIN (SELECT @curRow := 0) r ) AS BIR WHERE BIR.rank = 1;";
+	try
+	{
+		auto result_set = statement->executeQuery(query_base.c_str());
+		if (result_set->next())
+		{
+			Helper::assignValue(summoner.rank_all, result_set, "row_number");
+			delete result_set;
+			delete statement;
+		}
+		else
+		{
+			delete result_set;
+			delete statement;
+			return 0; // Summoner not found in DB	
+		}
+	}
+	catch (sql::SQLException e)
+	{
+		delete statement;
+		return 0; // Summoner not found in DB
+	}
+	return 1;
 }
