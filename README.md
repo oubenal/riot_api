@@ -4,7 +4,7 @@ Fetch stats of a player by pseudo name
 from the official *RIOT API* and output 
 HTML5 text format with usefull Information.
 
-Written in C++ with ![VS 2017](https://i.imgur.com/Cl9ovaR.png "Visual Studio 2017 ")  *(and the help of Resharper [ResharperCpp](https://i.imgur.com/xxlykAx.png "ResharperCpp")  by jetbrains !)*. 
+Written in C++ with ![VS 2017](https://i.imgur.com/Cl9ovaR.png "Visual Studio 2017 ")  *(and the help of ![ResharperCpp](https://i.imgur.com/xxlykAx.png "ResharperCpp")  by jetbrains )*. 
 
 ## External library
 ---------------
