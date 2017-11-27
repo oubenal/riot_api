@@ -1,4 +1,4 @@
-# LoL_Stats_Render
+# League of Legends *Stats Renderer*
 
 Fetch stats of a player by pseudo name 
 from the official *RIOT API* and output 
