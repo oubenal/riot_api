@@ -9,7 +9,8 @@ Written in C++ with Visual Studio 2017 *(and the help of Resharper by jetbrains)
 ## External library
 ---------------
 
-![alt text](https://image.ibb.co/fd1Zhm/cgicc.png "gnu cgicc")
+### GNU cgicc
+![alt text](https://i.imgur.com/utDFBWq.jpg "GNU Logo")
 ---------------
 A library for writing **CGI** applications.
 
@@ -20,11 +21,17 @@ such as HTTP servers.
 
 [Overview, Documentation, Example](https://www.gnu.org/software/cgicc/doc/index.html)
 
-![alt text](https://image.ibb.co/cZorTR/curl.png "curl")
+### cURLpp
+![curl](https://i.imgur.com/r74FEIq.png "curl logo")
 ---------------
+A C++ wrapper for libcURL.
+libcURL is a client-side URL transfer library. 
 
-![alt text](https://image.ibb.co/drmOa6/mysql.png "mysql-connector") 
+### MySQL Connector
+![alt text](https://i.imgur.com/mLrK7Pq.png "mysql logo") 
 ---------------
+A driver for connecting to a MySQL database server through the ODBC API, which is the standard means of connecting to any database. 
 
-![alt text](https://image.ibb.co/kZVS2m/rapidjson.png "rapidjson")
+![alt text](https://i.imgur.com/tHDiUgJ.jpg "json logo")
 ---------------
+A JSON parser/generator for C++.
